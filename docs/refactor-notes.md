@@ -310,3 +310,64 @@ npm run verify
 ```
 
 Kết quả: pass `lint`, `typecheck`, `build`. Đã test thủ công qua preview + `curl`: luồng chưa đăng nhập → chặn → đăng nhập sai → lỗi → đăng nhập đúng → vào được, giữ session qua F5 → tạo poster, tải ảnh không lỗi → đăng xuất → bị chặn lại, đúng như kịch bản kiểm chứng đã đề ra trong plan ban đầu.
+
+## 2026-07-09 - Đăng ký user thường (database thật đầu tiên: Neon Postgres + Prisma)
+
+### Cập nhật
+
+- Cài `prisma`/`@prisma/client` **ghim bản 6.x** (`6.19.2`/`6.19.3`), không dùng `latest` (hiện là 7.8.0) — xem "Bài học" bên dưới.
+- `prisma/schema.prisma`: model `User` (fullName, username unique, dateOfBirth, passwordHash, phone unique, email unique, role mặc định `"user"`, createdAt).
+- `lib/prisma.ts`: Prisma Client dạng singleton qua `globalThis`, tránh Next.js dev hot-reload tạo nhiều connection pool.
+- `auth.ts`: `authorize()` giờ rẽ nhánh — kiểm tra admin (biến môi trường) trước, nếu username không khớp admin mới tra bảng `User` qua Prisma. Vẫn 1 provider Credentials duy nhất, không thêm provider thứ 2.
+- `types/next-auth.d.ts`: mở rộng `role` từ `"admin"` thành `"admin" | "user"`.
+- `app/register/page.tsx` + `app/register/actions.ts`: form đăng ký (họ tên, tên đăng nhập, ngày sinh, SĐT, email, mật khẩu + xác nhận), validate cơ bản, `prisma.user.create()` trực tiếp (bắt lỗi Prisma `P2002` thay vì `findUnique` trước — tránh race condition), tự đăng nhập (`signIn`) sau khi tạo tài khoản, về `/`.
+- `app/login/page.tsx`/`actions.ts`: bỏ chữ "quản trị" (trang này giờ dùng chung cho cả admin và user thường), bỏ hardcode `redirectTo: "/admin/poster"` — giờ tôn trọng `callbackUrl` thực tế (mặc định về `/`), thêm link qua lại giữa `/login` và `/register`.
+- `package.json`: thêm script `postinstall: "prisma generate"` (bắt buộc để Vercel build ra được Prisma Client) và `prisma:studio` cho tiện xem dữ liệu.
+- Database: Neon Postgres tạo qua Vercel Storage (Marketplace → Neon → Free tier), áp dụng cho cả 3 môi trường Production/Preview/Development.
+
+### Thuật ngữ
+
+- **ORM (Prisma)**: lớp trung gian giúp thao tác database bằng code TypeScript thay vì viết SQL tay, tự sinh type-safe client từ file `schema.prisma`.
+- **Migration**: 1 file SQL ghi lại sự thay đổi cấu trúc bảng theo thời gian (`prisma/migrations/`) — có thể chạy lại để tái tạo đúng cấu trúc database ở máy/môi trường khác.
+- **Unique constraint**: ràng buộc ở cấp database đảm bảo 1 giá trị (username/email/phone) không thể trùng ở 2 dòng dữ liệu, kể cả khi 2 yêu cầu ghi cùng lúc (race condition) — khác với chỉ kiểm tra "đã tồn tại chưa" bằng code trước khi ghi (vẫn có khoảng hở).
+- **Connection pooling (pooled vs unpooled/direct)**: Neon cung cấp 2 kiểu kết nối — pooled (`DATABSE_DATABASE_URL`) dùng lúc app chạy bình thường (nhiều kết nối ngắn), direct/unpooled (`DATABSE_DATABASE_URL_UNPOOLED`) chỉ dùng khi chạy migration (cần 1 phiên kết nối thật, không qua pool).
+
+### Công dụng
+
+- Khách hàng tự đăng ký tài khoản, không cần admin tạo tay.
+- Có database thật đầu tiên của dự án, mở đường cho các tính năng sau này cần lưu dữ liệu người dùng (giỏ hàng, lịch sử đơn, v.v.) mà không cần đổi kiến trúc auth hiện có.
+
+### Lợi ích
+
+- Không đụng gì đến luồng admin hiện có ngoài việc mở rộng type `role` — đã test lại kỹ luồng đăng nhập admin sau khi sửa để chắc chắn.
+- `prisma.user.create()` + bắt lỗi `P2002` vừa đơn giản hơn (ít hơn 1 lượt truy vấn) vừa an toàn hơn race condition so với kiểm tra tồn tại trước rồi mới ghi.
+
+### Bài học (phát hiện khi nghiên cứu, tránh lặp lại)
+
+1. **Không cài Prisma bản mới nhất.** `npm view prisma dist-tags` cho thấy `latest` là **7.8.0**, nhưng Prisma 7 bắt buộc dùng "driver adapter" (`new PrismaClient({ adapter })` thay vì cách viết cổ điển `new PrismaClient()`), di chuyển cấu hình sang file `prisma.config.ts` mới, và có báo cáo lỗi khi kết hợp với Next.js 16 + Turbopack (đúng stack đang dùng). Đã ghim bản **6.x** (tag `prev` trên npm) để giữ cách dùng đơn giản, không cần adapter.
+2. **Vercel Storage sinh tên biến môi trường phụ thuộc "Custom Prefix" người dùng tự gõ** — gõ nhầm chính tả ("DATABSE" thay vì "DATABASE") vẫn hoạt động bình thường, vì code chỉ cần khớp đúng tên biến, không quan tâm nó có đúng chính tả tiếng Anh hay không. Không cần bắt người dùng làm lại, chỉ cần sửa `prisma/schema.prisma` cho khớp tên thật đã tạo ra (`DATABSE_DATABASE_URL`/`DATABSE_DATABASE_URL_UNPOOLED`) — luôn chạy `vercel env ls` để xem tên chính xác trước khi viết schema, đừng đoán.
+3. **Prisma CLI (`prisma migrate dev`, `prisma studio`...) không tự đọc `.env.local`** như cách Next.js dev server làm — nó chỉ đọc `.env` mặc định. Cách xử lý không cần thêm file `.env` riêng (tránh 2 nguồn sự thật lệch nhau): chạy `set -a && source .env.local && set +a && npx prisma ...` để nạp biến vào shell trước khi gọi lệnh Prisma.
+
+### Rủi ro
+
+- SĐT (`phone`) là unique — 1 gia đình dùng chung 1 SĐT chỉ đăng ký được 1 tài khoản. Chấp nhận được ở quy mô hiện tại (landing page bán trái cây nhỏ), cân nhắc lại nếu sau này cần nhiều tài khoản chung SĐT.
+- Chưa xác thực email/SĐT thật (không gửi OTP/email xác nhận) — đúng theo yêu cầu "chỉ cơ bản thôi" của người dùng, ai cũng đăng ký được bằng SĐT/email bất kỳ (kể cả không có thật). Cân nhắc thêm xác thực nếu sau này có tính năng cần định danh chắc chắn hơn (ví dụ thanh toán).
+- Neon free tier giới hạn 0.5GB storage — đủ dùng lâu dài ở quy mô nhỏ, nhưng cần theo dõi nếu lượng user tăng nhanh.
+
+### Quản trị rủi ro
+
+- Test đầy đủ qua preview + query trực tiếp database: đăng ký hợp lệ → tự đăng nhập → session đúng `role: "user"`; đăng ký trùng username/email/phone → thông báo đúng, không ghi đè; mật khẩu không khớp → chặn, không tới database; đăng nhập admin vẫn hoạt động bình thường sau khi sửa `auth.ts`/`types/next-auth.d.ts`.
+- Đã xoá dữ liệu test (`testuser1`) khỏi database thật sau khi kiểm chứng xong, không để lại rác.
+
+### Hướng phát triển
+
+- Chưa có khu vực/trang riêng cho user thường (không có dashboard) — đăng ký xong chỉ về trang chủ, đúng phạm vi đã thống nhất. Khi cần, thêm route mới (ví dụ `/tai-khoan`) và mở rộng `authConfig.callbacks.authorized` để bảo vệ route đó theo `role === "user"` hoặc bất kỳ role nào đã đăng nhập.
+- Muốn quản lý user qua giao diện: chạy `npm run prisma:studio` (cần nạp env qua `.env.local` như mục "Bài học" #3).
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass `lint`, `typecheck`, `build`. Đã test qua preview: đăng ký hợp lệ → tự đăng nhập → về `/` với session `role: "user"`; đăng ký trùng tên đăng nhập → báo lỗi đúng, không crash; mật khẩu xác nhận sai → chặn trước khi chạm database; đăng nhập admin (`/login` → `/admin/poster`) vẫn hoạt động bình thường. Đã query trực tiếp database xác nhận chỉ có đúng 1 user hợp lệ được lưu, sau đó xoá dữ liệu test.

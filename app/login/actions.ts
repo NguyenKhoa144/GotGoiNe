@@ -4,11 +4,12 @@ import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 
 export async function authenticate(_prevState: string | undefined, formData: FormData) {
+  const callbackUrl = formData.get("callbackUrl");
   try {
     await signIn("credentials", {
       username: formData.get("username"),
       password: formData.get("password"),
-      redirectTo: "/admin/poster",
+      redirectTo: typeof callbackUrl === "string" && callbackUrl ? callbackUrl : "/",
     });
   } catch (error) {
     if (error instanceof AuthError) {
