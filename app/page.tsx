@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackAddToCart } from "@/lib/analytics";
 import { CtaBanner } from "@/components/home/cta-banner";
 import { Header } from "@/components/home/header";
 import { Hero } from "@/components/home/hero";
@@ -25,6 +26,12 @@ export default function Home() {
   const handleAdd = (key: string) => {
     setFlash(key);
     setTimeout(() => setFlash(null), 900);
+
+    const product = products.find((p) => p.id === key);
+    trackAddToCart({
+      id: key,
+      name: key === "hero" ? "Dứa mật gọt sẵn" : product?.name,
+    });
   };
 
   return (
