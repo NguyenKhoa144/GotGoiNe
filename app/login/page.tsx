@@ -33,6 +33,7 @@ function LoginForm() {
         type="text"
         required
         autoFocus
+        autoComplete="username"
         className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
       />
 
@@ -42,6 +43,7 @@ function LoginForm() {
           name="password"
           type={showPassword ? "text" : "password"}
           required
+          autoComplete="current-password"
           className="w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 pr-10 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
         />
         <button

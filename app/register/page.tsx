@@ -2,8 +2,9 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Lock } from "lucide-react";
 import { register } from "./actions";
+import { REGISTRATION_LOCKED_MESSAGE } from "./constants";
 import { AuthScene } from "@/components/auth/auth-scene";
 
 export default function RegisterPage() {
@@ -27,6 +28,7 @@ export default function RegisterPage() {
           type="text"
           required
           autoFocus
+          autoComplete="name"
           className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
         />
 
@@ -35,6 +37,7 @@ export default function RegisterPage() {
           name="username"
           type="text"
           required
+          autoComplete="off"
           className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
         />
 
@@ -52,6 +55,9 @@ export default function RegisterPage() {
           type="tel"
           required
           placeholder="09xxxxxxxx"
+          pattern="0[35789][0-9]{8}"
+          maxLength={10}
+          title="Số di động Việt Nam, 10 số, bắt đầu bằng 03/05/07/08/09"
           className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
         />
 
@@ -70,6 +76,7 @@ export default function RegisterPage() {
             type={showPassword ? "text" : "password"}
             required
             minLength={6}
+            autoComplete="new-password"
             className="w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 pr-10 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
           />
           <button
@@ -89,6 +96,7 @@ export default function RegisterPage() {
             type={showConfirmPassword ? "text" : "password"}
             required
             minLength={6}
+            autoComplete="new-password"
             className="w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 pr-10 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
           />
           <button
@@ -101,7 +109,14 @@ export default function RegisterPage() {
           </button>
         </div>
 
-        {errorMessage ? <p className="mb-4 text-sm font-medium text-red-600">{errorMessage}</p> : null}
+        {errorMessage === REGISTRATION_LOCKED_MESSAGE ? (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-800">
+            <Lock size={16} className="mt-0.5 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        ) : errorMessage ? (
+          <p className="mb-4 text-sm font-medium text-red-600">{errorMessage}</p>
+        ) : null}
 
         <button
           type="submit"
