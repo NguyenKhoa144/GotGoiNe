@@ -259,3 +259,54 @@ npm run verify
 ```
 
 Kết quả: pass `lint`, `typecheck`, và `build`. Kiểm tra bằng preview ở viewport 1280×800: giao diện hero/product card/nút thêm không lệch so với trước khi đổi tên.
+
+## 2026-07-09 - Thêm đăng nhập admin + công cụ tạo Poster
+
+### Cập nhật
+
+- Cài `next-auth@beta` (Auth.js v5), `bcryptjs`, `html2canvas`.
+- `auth.config.ts`: config dùng chung, gồm `pages.signIn`, `callbacks.authorized` (chặn `/admin/*` nếu chưa đăng nhập admin), và `callbacks.jwt`/`callbacks.session` (gắn `role` vào session).
+- `auth.ts`: thêm `Credentials` provider — so khớp `ADMIN_USERNAME` + `bcrypt.compare` với hash từ biến môi trường, trả `role: "admin"`.
+- `proxy.ts` (root, thay `middleware.ts` — xem mục "Bài học" bên dưới): bảo vệ route `/admin/:path*`.
+- `app/api/auth/[...nextauth]/route.ts`: expose `GET`/`POST` từ `auth.ts`.
+- `app/login/page.tsx` + `app/login/actions.ts`: form đăng nhập dùng `useActionState` + Server Action gọi `signIn()`.
+- `app/admin/page.tsx`: redirect sang `/admin/poster`. `app/admin/poster/page.tsx`: render công cụ poster + nút đăng xuất (`signOut()` qua Server Action).
+- `data/poster.ts`: port `FRUIT_DB`/`lookupFruit` từ `Poster/index.html` (dự án `got-goi-ne-poster` cũ, không phải `Poster-1` — bản đó bị lỗi, không dùng làm nguồn).
+- `components/admin/poster-generator.tsx` + `.module.css`: port toàn bộ UI/logic sang React (state thay DOM manipulation), dùng CSS Modules để cô lập hoàn toàn khỏi `home.css`. `html2canvas` import động (`import()`) trong `handleDownload` — chỉ tải khi bấm nút, không nằm trong bundle ban đầu.
+- `.env.local.example`: thêm `AUTH_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH_B64`. `.gitignore` đã có ngoại lệ cho `.env.local.example` từ trước.
+
+### Thuật ngữ
+
+- **Proxy (trước là Middleware)**: code chạy trước khi request tới route, dùng để chặn/redirect. Next.js 16 đổi tên file quy ước từ `middleware.ts` sang `proxy.ts`.
+- **JWT session**: thông tin đăng nhập được mã hoá và ký, lưu trong cookie `authjs.session-token`, không cần lưu ở database.
+- **Credentials provider**: cách Auth.js xác thực bằng username/password tự viết logic, khác với đăng nhập qua Google/Facebook.
+
+### Bài học (2 lỗi khó thấy, mất nhiều bước debug mới ra)
+
+1. **Next.js 16 đổi `middleware.ts` → `proxy.ts`**: build báo lỗi "must export a function". Thêm hiểu lầm phụ: export dạng destructure trực tiếp (`export const { auth: proxy } = NextAuth(...)`) **không được Next.js nhận diện** dù chạy đúng lúc runtime — Next chỉ dò tìm export qua AST tĩnh, và chỉ nhận `export const proxy = ...` (identifier đơn giản) hoặc `export function proxy() {}`/`export default`. Phải tách: gọi `NextAuth()` trước, gán biến, rồi mới `export const proxy = auth;`.
+2. **Bug khó phát hiện nhất: đăng nhập xong, F5 lại bị đá về `/login`.** Nguyên nhân: `callbacks.jwt`/`callbacks.session` (nơi gắn `role: "admin"` vào session) lúc đầu chỉ khai báo trong `auth.ts` (instance NextAuth đầy đủ, dùng để đăng nhập) — nhưng `proxy.ts` lại tạo **một instance NextAuth riêng** chỉ từ `authConfig` (không có 2 callback đó) để kiểm tra session mỗi request. Cookie vẫn hợp lệ và giải mã được, nhưng vì proxy không có callback gắn `role`, `auth?.user?.role` luôn `undefined` → `authorized()` luôn từ chối. Sửa bằng cách chuyển `jwt`/`session` vào `authConfig` dùng chung, để cả 2 instance (proxy và auth.ts) đều gắn `role` giống nhau.
+3. **Hash bcrypt bị hỏng khi để thẳng trong `.env`**: bộ đọc file `.env` của Next.js hiểu dấu `$` là tham chiếu biến (kiểu `dotenv-expand`) và âm thầm cắt mất phần `$2b$10$...` của hash, không báo lỗi gì. Escape bằng `$$` cho kết quả không nhất quán (chỉ hoạt động đúng cho 2/3 nhóm `$`, không rõ vì sao). Giải pháp chắc chắn: mã hoá cả hash bằng base64 trước khi lưu vào `.env` (biến đổi tên thành `ADMIN_PASSWORD_HASH_B64`), decode lại bằng `Buffer.from(..., "base64")` trong code — tránh hoàn toàn ký tự `$` trong file `.env`.
+
+### Rủi ro
+
+- Chỉ có 1 tài khoản admin qua biến môi trường, chưa có database/user thường — đúng như phạm vi đã thống nhất, mở rộng sau khi cần thật.
+- `.env.local` hiện dùng tài khoản test cục bộ (`admin` / `test1234`, `AUTH_SECRET` giả) — **phải đổi bằng giá trị thật khi deploy** (xem Hướng phát triển).
+
+### Quản trị rủi ro
+
+- Đã revert và làm lại đúng 1 lần khi phát hiện bug session (mục 2 ở trên) — không đoán mò, dùng `curl` + cookie jar để cô lập vấn đề (loại trừ khả năng do trình duyệt/preview tool caching) trước khi kết luận nguyên nhân.
+- Chạy `npm run verify` sau mỗi lần sửa lớn; kiểm tra toàn bộ luồng qua preview + `curl`: chưa đăng nhập bị chặn, sai mật khẩu bị từ chối, đăng nhập đúng vào được và giữ session sau F5, tải poster không lỗi console, đăng xuất xong bị chặn lại.
+
+### Hướng phát triển
+
+- Trước khi deploy thật: đổi `AUTH_SECRET` bằng giá trị ngẫu nhiên thật (`openssl rand -base64 32`), đặt `ADMIN_USERNAME`/`ADMIN_PASSWORD_HASH_B64` với mật khẩu thật (không dùng `test1234`), set cả 3 biến này trên Vercel (Project Settings → Environment Variables).
+- Khi cần user thường: thêm database + provider mới vào `auth.ts`, giữ nguyên cấu trúc `authConfig`/`auth.ts`/`proxy.ts` hiện tại — không cần viết lại từ đầu.
+- Ảnh sản phẩm trong poster vẫn là emoji — nếu sau này muốn ảnh thật, cần sửa `data/poster.ts` và `poster-generator.tsx` để nhận URL ảnh thay vì emoji.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass `lint`, `typecheck`, `build`. Đã test thủ công qua preview + `curl`: luồng chưa đăng nhập → chặn → đăng nhập sai → lỗi → đăng nhập đúng → vào được, giữ session qua F5 → tạo poster, tải ảnh không lỗi → đăng xuất → bị chặn lại, đúng như kịch bản kiểm chứng đã đề ra trong plan ban đầu.
