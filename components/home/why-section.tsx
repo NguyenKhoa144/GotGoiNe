@@ -1,3 +1,7 @@
+"use client";
+
+import { useLanguage } from "@/lib/language-context";
+import { homeStrings } from "@/lib/i18n/home-strings";
 import type { WhyReason } from "@/data/home";
 
 type WhySectionProps = {
@@ -5,18 +9,19 @@ type WhySectionProps = {
 };
 
 export function WhySection({ reasons }: WhySectionProps) {
+  const { lang } = useLanguage();
+  const t = homeStrings[lang].why;
+
   return (
     <section className="home-why-section" id="why">
       <div className="home-container">
-        <div className="home-section-eyebrow">Tại sao chọn chúng tôi</div>
+        <div className="home-section-eyebrow">{t.eyebrow}</div>
         <h2 className="home-section-title">
-          Tại sao khách hàng
+          {t.titleLine1}
           <br />
-          yêu thích Gọt Gòi Nè?
+          {t.titleLine2}
         </h2>
-        <p className="home-section-sub">
-          Ba lý do đơn giản - nhưng chúng tôi thực hiện mỗi ngày, không ngoại lệ.
-        </p>
+        <p className="home-section-sub">{t.subtitle}</p>
         <div className="home-why-grid">
           {reasons.map((reason) => (
             <div className="home-why-card" key={reason.title}>

@@ -1,3 +1,7 @@
+"use client";
+
+import { useLanguage } from "@/lib/language-context";
+import { homeStrings } from "@/lib/i18n/home-strings";
 import type { Product } from "@/data/home";
 
 type ProductsSectionProps = {
@@ -13,14 +17,15 @@ export function ProductsSection({
   flash,
   onAdd,
 }: ProductsSectionProps) {
+  const { lang } = useLanguage();
+  const t = homeStrings[lang].products;
+
   return (
     <section className="home-products-section" id="menu">
       <div className="home-container">
-        <div className="home-section-eyebrow">🛒 Menu hôm nay</div>
+        <div className="home-section-eyebrow">{t.eyebrow}</div>
         <h2 className="home-section-title">{activeCategory}</h2>
-        <p className="home-section-sub">
-          Gọt và đóng gói ngay mỗi buổi sáng - đảm bảo độ tươi tối đa khi đến tay bạn.
-        </p>
+        <p className="home-section-sub">{t.subtitle}</p>
 
         {products.length > 0 ? (
           <div className="home-products-bento">
@@ -41,7 +46,7 @@ export function ProductsSection({
                   <button
                     className={`home-p-add${flash === product.id ? " home-is-done" : ""}`}
                     onClick={() => onAdd(product.id)}
-                    aria-label={`Thêm ${product.name}`}
+                    aria-label={`${t.addAriaPrefix}${product.name}`}
                   >
                     {flash === product.id ? "✓" : "＋"}
                   </button>
@@ -51,8 +56,8 @@ export function ProductsSection({
           </div>
         ) : (
           <div className="home-products-empty">
-            <strong>Menu đang được cập nhật</strong>
-            <p>Danh mục này sẽ có sản phẩm mới sau khi bếp chốt nguyên liệu trong ngày.</p>
+            <strong>{t.emptyTitle}</strong>
+            <p>{t.emptyDesc}</p>
           </div>
         )}
       </div>

@@ -1,3 +1,7 @@
+"use client";
+
+import { useLanguage } from "@/lib/language-context";
+import { homeStrings } from "@/lib/i18n/home-strings";
 import type { ProcessStep } from "@/data/home";
 
 type HowSectionProps = {
@@ -5,19 +9,19 @@ type HowSectionProps = {
 };
 
 export function HowSection({ steps }: HowSectionProps) {
+  const { lang } = useLanguage();
+  const t = homeStrings[lang].how;
+
   return (
     <section className="home-how-section" id="process">
       <div className="home-container home-how-inner">
-        <div className="home-section-eyebrow">📦 Quy trình</div>
+        <div className="home-section-eyebrow">{t.eyebrow}</div>
         <h2 className="home-section-title">
-          Từ vườn đến tay bạn
+          {t.titleLine1}
           <br />
-          trong 4 bước
+          {t.titleLine2}
         </h2>
-        <p className="home-section-sub">
-          Quy trình chặt chẽ - để mỗi hộp trái cây đến tay bạn đều tươi, sạch và an toàn tuyệt
-          đối.
-        </p>
+        <p className="home-section-sub">{t.subtitle}</p>
         <div className="home-steps-grid">
           {steps.map((step) => (
             <div className="home-step-card" key={step.number}>

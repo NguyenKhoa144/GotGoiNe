@@ -27,30 +27,22 @@ export function AuthScene({ children }: { children: ReactNode }) {
   const [images, setImages] = useState<string[]>(() => FRUIT_IMAGE_POOL.slice(0, CELL_COUNT));
 
   useEffect(() => {
-    const replaceCell = (index: number) => {
-      setImages((current) => {
-        const next = [...current];
-        next[index] = pickReplacement(FRUIT_IMAGE_POOL, current);
-        return next;
-      });
-    };
-
-    // Random hoá ban đầu (né hydration mismatch) nhưng rải từng ô ra cách
-    // nhau 350ms thay vì đổi cả 4 ô trong cùng 1 lần setState — nếu không,
-    // ngay lúc vừa vào trang sẽ thấy cả 4 ảnh "nhảy" cùng lúc, không nhất
-    // quán với cách xoay vòng từng ô một sau đó.
-    const staggerTimers = Array.from({ length: CELL_COUNT }, (_, i) => setTimeout(() => replaceCell(i), i * 350));
-
+    // 4 ảnh đầu tiên (fruit-01..04) đã được preload sẵn (priority) nên hiện
+    // ngay lập tức, không chờ tải — cố tình KHÔNG random hoá ngay lúc mount
+    // nữa (trước đây có làm, nhưng khiến 4 ảnh mới toanh chưa preload phải
+    // tải lại gần như ngay sau khi trang vừa hiện xong, gây cảm giác giật/
+    // lag). Random hoá thật sự chỉ bắt đầu từ lần xoay vòng đầu tiên.
     let cycleIndex = 0;
     const id = setInterval(() => {
-      replaceCell(cycleIndex);
+      setImages((current) => {
+        const next = [...current];
+        next[cycleIndex] = pickReplacement(FRUIT_IMAGE_POOL, current);
+        return next;
+      });
       cycleIndex = (cycleIndex + 1) % CELL_COUNT;
     }, ROTATE_INTERVAL_MS);
 
-    return () => {
-      staggerTimers.forEach(clearTimeout);
-      clearInterval(id);
-    };
+    return () => clearInterval(id);
   }, []);
 
   return (
@@ -58,7 +50,7 @@ export function AuthScene({ children }: { children: ReactNode }) {
       <div className={styles.grid} aria-hidden="true">
         {images.map((src, i) => (
           <div key={i} className={styles.cell}>
-            <Image key={src} src={src} alt="" fill sizes="50vw" className={styles.image} priority={i < 2} />
+            <Image key={src} src={src} alt="" fill sizes="50vw" className={styles.image} priority quality={70} />
           </div>
         ))}
       </div>
