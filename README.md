@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gọt Gòi Nè
 
-## Getting Started
+Landing page Next.js cho Gọt Gòi Nè, thương hiệu trái cây gọt sẵn tại Cần Thơ.
 
-First, run the development server:
+## Yêu cầu môi trường
+
+- Node.js tương thích với Next.js 16
+- npm
+
+## Chạy dự án
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Mở trình duyệt tại:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Nếu không mở được, kiểm tra xem cổng `3000` có process cũ đang giữ không:
 
-## Learn More
+```bash
+lsof -nP -iTCP:3000 -sTCP:LISTEN
+```
 
-To learn more about Next.js, take a look at the following resources:
+Nếu thấy một process `node` cũ, dừng nó bằng PID được hiển thị:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+kill <PID>
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Kiểm tra chất lượng
 
-## Deploy on Vercel
+Chạy toàn bộ kiểm tra nền:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run verify
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Lệnh này chạy lần lượt:
+
+- `npm run lint`: kiểm tra quy tắc code.
+- `npm run typecheck`: kiểm tra kiểu TypeScript, không tạo file output.
+- `npm run build`: tạo bản production để chắc chắn app có thể deploy.
+
+## Cấu trúc chính
+
+- `app/page.tsx`: trang chủ — ghép section và quản lý state.
+- `app/layout.tsx`: layout gốc, metadata và cấu hình HTML/body.
+- `app/globals.css`: CSS global và Tailwind import.
+- `app/home.css`: style landing page.
+- `components/home/`: các section UI của trang chủ.
+- `data/home.ts`: dữ liệu tĩnh và types.
+- `public/images`: hình ảnh tĩnh dùng trong trang.
+
+## Ghi chú phát triển
+
+Thư mục `.next` là output tự sinh bởi Next.js. Không sửa code trong đó.
+
+## Tài liệu kỹ thuật
+
+- `docs/project-structure.md`: cấu trúc dự án đầy đủ — thư mục, file, luồng dữ liệu, UI mapping.
+- `docs/technical-spec.md`: thông số kỹ thuật hiện tại của codebase.
+- `docs/refactor-notes.md`: nhật ký refactor và quản trị rủi ro theo từng bước.
