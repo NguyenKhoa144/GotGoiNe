@@ -1,0 +1,76 @@
+/* Lưới 2x2 (4 ô đều nhau), cả 4 ô đều có ảnh. Trên cùng là khung kính
+   (login-scene.tsx render children vào .content). */
+.scene {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #f0f9e1;
+  padding: 1rem;
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.cell {
+  position: relative;
+  overflow: hidden;
+}
+
+.image {
+  object-fit: cover;
+  animation: tile-fade-in 900ms ease-out;
+}
+
+@keyframes tile-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Dot-grain (halftone dithering có chủ đích, kiểu grain phim/in ấn): lưới
+   chấm nhỏ đều nhau phủ lên toàn bộ mosaic. Mắt người nhìn ảnh có texture
+   tần số cao này sẽ tự "defocus" nhẹ lên các chấm — não diễn giải đó thành
+   chi tiết/độ nét, dù ảnh không đổi độ phân giải thật (đúng nguyên lý phim
+   nhựa giữ lại grain để tránh ảnh trông "phẳng giả"). 2 lớp radial-gradient
+   lệch nhau nửa ô (chấm tối + chấm sáng, offset 50%) mô phỏng hạt grain thật
+   có cả hạt sáng lẫn hạt tối, không phải 1 màu xám đều. mix-blend-mode:
+   overlay khiến chấm tối làm đậm vùng bóng, chấm sáng làm bừng vùng sáng —
+   thay vì phủ xám phẳng lên ảnh, đồng thời vẫn chống vằn màu (banding) như
+   lớp nhiễu cũ vì bản chất đây là ordered dithering. */
+.dotGrain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+  background-image:
+    radial-gradient(circle at center, rgba(0, 0, 0, 0.55) 0.55px, transparent 0.55px),
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.5) 0.55px, transparent 0.55px);
+  background-size:
+    3px 3px,
+    3px 3px;
+  background-position:
+    0 0,
+    1.5px 1.5px;
+}
+
+.content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
