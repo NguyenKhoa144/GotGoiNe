@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import { Lock } from "lucide-react";
 
 type HeaderProps = {
   categories: string[];
@@ -41,6 +43,9 @@ export function Header({ categories, activeCategory, onCategoryChange }: HeaderP
             <span>|</span>
             <button>EN</button>
           </div>
+          <Link href="/login" className="home-nav-admin" aria-label="Đăng nhập quản trị">
+            <Lock size={16} />
+          </Link>
         </div>
       </div>
 
