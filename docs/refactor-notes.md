@@ -214,3 +214,48 @@ npm run verify
 ```
 
 Kết quả: pass `lint`, `typecheck`, và `build`. Đã kiểm tra bằng preview: không có script nào render khi thiếu ID, không lỗi console khi bấm nút "＋".
+
+## 2026-07-09 - Thêm tiền tố `home-` cho toàn bộ class trong `home.css`
+
+### Cập nhật
+
+- Đổi tên toàn bộ 71 class trong `app/home.css` và 7 component trong `components/home/*` sang tiền tố `home-` (ví dụ `.hero` → `.home-hero`, `.container` → `.home-container`, `.active` → `.home-active`).
+- Không đổi bất kỳ key nghiệp vụ nào trùng tên (ví dụ chuỗi `"hero"` dùng để so sánh `flash === "hero"` trong `hero.tsx`/`page.tsx`, hoặc thuộc tính `product.featured` trong `data/home.ts`) — chỉ đổi phần class CSS thật sự.
+
+### Thuật ngữ
+
+- **Namespace/tiền tố CSS**: thêm một đoạn chữ cố định (`home-`) trước mọi tên class của một khu vực code, để class đó không trùng tên với class ở khu vực khác.
+- **Compound selector**: selector CSS ghép nhiều class trên cùng 1 phần tử, ví dụ `.product-card.featured` (phần tử vừa có class `product-card` vừa có `featured`).
+
+### Công dụng
+
+- `.home-container`, `.home-active`, `.home-featured`... không còn là tên chung chung dễ đụng — đặc biệt `.container` trước đây trùng tên với utility class có sẵn của Tailwind CSS v4, tiềm ẩn xung đột ưu tiên CSS mà không báo lỗi.
+- Khi sau này thêm trang thứ 2 (`/gio-hang`, `/don-hang`...), style của trang chủ không còn rò rỉ sang trang mới vì tên class đã rõ ràng là "thuộc về trang chủ".
+
+### Lợi ích
+
+- Không đổi giao diện — đã kiểm tra bằng preview ở màn desktop (1280px): hero, product card "featured", nút thêm sản phẩm đều render và hoạt động giống hệt trước.
+- Không đổi cấu trúc component hay data flow, chỉ đổi tên class.
+
+### Rủi ro
+
+- **Bài học từ lần thử đầu tiên (đã revert)**: dùng script tự động đổi tên "mù" (blind find-replace theo văn bản) đã vô tình đổi luôn các chuỗi/thuộc tính JS trùng tên với class CSS — ví dụ biến đổi `product.featured` (thuộc tính dữ liệu) thành `product.home-featured` (lỗi cú pháp JS, sẽ crash build), và đổi nhầm khóa so sánh `flash === "hero"` thành `flash === "home-hero"` (làm sai luồng `handleAdd`/`trackAddToCart`). Bài học: khi đổi tên có ý nghĩa kép (vừa là CSS class vừa là chuỗi logic), không nên tự động hoá toàn bộ — phải sửa tay từng chỗ dùng để phân biệt ngữ cảnh.
+- CSS vẫn là global (`app/home.css` import ở root layout) — tiền tố chỉ giảm rủi ro trùng tên, chưa cô lập hoàn toàn như CSS Modules.
+
+### Quản trị rủi ro
+
+- Sau khi phát hiện lỗi ở lần thử tự động đầu tiên, đã `git checkout` revert toàn bộ và làm lại: script tự động chỉ áp dụng cho `app/home.css` (thuần CSS, không có ngữ cảnh JS gây nhầm lẫn); 7 file component được sửa tay từng dòng `className`.
+- Đối chiếu danh sách class dùng trong component với danh sách class định nghĩa trong CSS (qua script so khớp) để đảm bảo khớp 100%, không sót tên nào.
+- Chạy `npm run verify` (lint, typecheck, build) và kiểm tra bằng preview: card "featured" hiển thị đúng nền xanh đậm, nút "＋" chuyển sang trạng thái "✓" (`home-is-done`) đúng và tự reset sau 900ms, không lỗi console.
+
+### Hướng phát triển
+
+- Nếu sau này có nhiều page hơn và namespace bằng tiền tố vẫn không đủ an toàn, cân nhắc chuyển hẳn sang CSS Modules (`home.module.css`) — sẽ cần sửa lại cách import/sử dụng class trong toàn bộ 7 component.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass `lint`, `typecheck`, và `build`. Kiểm tra bằng preview ở viewport 1280×800: giao diện hero/product card/nút thêm không lệch so với trước khi đổi tên.

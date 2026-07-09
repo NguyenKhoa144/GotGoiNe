@@ -4,10 +4,10 @@ type MarqueeStripProps = {
 
 export function MarqueeStrip({ items }: MarqueeStripProps) {
   return (
-    <div className="marquee-strip">
-      <div className="marquee-track">
+    <div className="home-marquee-strip">
+      <div className="home-marquee-track">
         {items.concat(items).map((item, idx) => (
-          <span key={`${item}-${idx}`} className="marquee-item">
+          <span key={`${item}-${idx}`} className="home-marquee-item">
             {item}
           </span>
         ))}

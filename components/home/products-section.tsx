@@ -14,32 +14,32 @@ export function ProductsSection({
   onAdd,
 }: ProductsSectionProps) {
   return (
-    <section className="products-section" id="menu">
-      <div className="container">
-        <div className="section-eyebrow">🛒 Menu hôm nay</div>
-        <h2 className="section-title">{activeCategory}</h2>
-        <p className="section-sub">
+    <section className="home-products-section" id="menu">
+      <div className="home-container">
+        <div className="home-section-eyebrow">🛒 Menu hôm nay</div>
+        <h2 className="home-section-title">{activeCategory}</h2>
+        <p className="home-section-sub">
           Gọt và đóng gói ngay mỗi buổi sáng - đảm bảo độ tươi tối đa khi đến tay bạn.
         </p>
 
         {products.length > 0 ? (
-          <div className="products-bento">
+          <div className="home-products-bento">
             {products.map((product) => (
               <div
-                className={`product-card${product.featured ? " featured" : ""}`}
+                className={`home-product-card${product.featured ? " home-featured" : ""}`}
                 key={product.id}
               >
                 <div>
-                  {product.badge ? <div className="p-badge">{product.badge}</div> : null}
-                  <span className="p-emoji">{product.emoji}</span>
-                  <div className="p-name">{product.name}</div>
-                  <div className="p-weight">{product.weight}</div>
-                  {product.description ? <p className="p-desc">{product.description}</p> : null}
+                  {product.badge ? <div className="home-p-badge">{product.badge}</div> : null}
+                  <span className="home-p-emoji">{product.emoji}</span>
+                  <div className="home-p-name">{product.name}</div>
+                  <div className="home-p-weight">{product.weight}</div>
+                  {product.description ? <p className="home-p-desc">{product.description}</p> : null}
                 </div>
-                <div className="p-footer">
-                  <span className="p-price">{product.price}</span>
+                <div className="home-p-footer">
+                  <span className="home-p-price">{product.price}</span>
                   <button
-                    className={`p-add${flash === product.id ? " is-done" : ""}`}
+                    className={`home-p-add${flash === product.id ? " home-is-done" : ""}`}
                     onClick={() => onAdd(product.id)}
                     aria-label={`Thêm ${product.name}`}
                   >
@@ -50,7 +50,7 @@ export function ProductsSection({
             ))}
           </div>
         ) : (
-          <div className="products-empty">
+          <div className="home-products-empty">
             <strong>Menu đang được cập nhật</strong>
             <p>Danh mục này sẽ có sản phẩm mới sau khi bếp chốt nguyên liệu trong ngày.</p>
           </div>
