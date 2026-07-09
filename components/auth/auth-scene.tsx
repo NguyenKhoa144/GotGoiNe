@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
-import styles from "./login-scene.module.css";
+import styles from "./auth-scene.module.css";
 
 const FRUIT_IMAGE_POOL = Array.from(
   { length: 20 },
@@ -10,22 +10,17 @@ const FRUIT_IMAGE_POOL = Array.from(
 );
 
 // Lưới 2x2 — 4 ô đều nhau, đánh số 0-3 theo thứ tự lấp lưới (trái qua phải,
-// trên xuống dưới). Mỗi 15s, đúng 1 ô (theo thứ tự 0,1,2,3,0,1,...) được
+// trên xuống dưới). Mỗi 5s, đúng 1 ô (theo thứ tự 0,1,2,3,0,1,...) được
 // thay ảnh mới — không đổi cả 4 ô cùng lúc.
 const CELL_COUNT = 4;
-const ROTATE_INTERVAL_MS = 15 * 1000;
-
-function pickRandomImages(pool: string[], count: number) {
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
-}
+const ROTATE_INTERVAL_MS = 5 * 1000;
 
 function pickReplacement(pool: string[], exclude: string[]) {
   const candidates = pool.filter((src) => !exclude.includes(src));
   return candidates[Math.floor(Math.random() * candidates.length)] ?? pool[0];
 }
 
-export function LoginScene({ children }: { children: ReactNode }) {
+export function AuthScene({ children }: { children: ReactNode }) {
   // Thứ tự cố định (không random) cho lần render đầu để khớp giữa server và
   // client — tránh lỗi hydration mismatch. Xáo ngẫu nhiên thật sự chỉ chạy
   // trong useEffect, tức là sau khi đã mount ở client.

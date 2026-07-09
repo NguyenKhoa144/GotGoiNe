@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { authenticate } from "./actions";
-import { LoginScene } from "@/components/login/login-scene";
+import { AuthScene } from "@/components/auth/auth-scene";
 
 function LoginForm() {
   const [errorMessage, formAction, isPending] = useActionState(authenticate, undefined);
@@ -76,10 +76,10 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <LoginScene>
+    <AuthScene>
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>
-    </LoginScene>
+    </AuthScene>
   );
 }
