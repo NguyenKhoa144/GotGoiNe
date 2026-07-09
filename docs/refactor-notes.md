@@ -330,7 +330,7 @@ Kết quả: pass `lint`, `typecheck`, `build`. Đã test thủ công qua previe
 - **ORM (Prisma)**: lớp trung gian giúp thao tác database bằng code TypeScript thay vì viết SQL tay, tự sinh type-safe client từ file `schema.prisma`.
 - **Migration**: 1 file SQL ghi lại sự thay đổi cấu trúc bảng theo thời gian (`prisma/migrations/`) — có thể chạy lại để tái tạo đúng cấu trúc database ở máy/môi trường khác.
 - **Unique constraint**: ràng buộc ở cấp database đảm bảo 1 giá trị (username/email/phone) không thể trùng ở 2 dòng dữ liệu, kể cả khi 2 yêu cầu ghi cùng lúc (race condition) — khác với chỉ kiểm tra "đã tồn tại chưa" bằng code trước khi ghi (vẫn có khoảng hở).
-- **Connection pooling (pooled vs unpooled/direct)**: Neon cung cấp 2 kiểu kết nối — pooled (`DATABSE_DATABASE_URL`) dùng lúc app chạy bình thường (nhiều kết nối ngắn), direct/unpooled (`DATABSE_DATABASE_URL_UNPOOLED`) chỉ dùng khi chạy migration (cần 1 phiên kết nối thật, không qua pool).
+- **Connection pooling (pooled vs unpooled/direct)**: Neon cung cấp 2 kiểu kết nối — pooled (`DATABASE_URL`) dùng lúc app chạy bình thường (nhiều kết nối ngắn), direct/unpooled (`DATABASE_URL_UNPOOLED`) chỉ dùng khi chạy migration (cần 1 phiên kết nối thật, không qua pool).
 
 ### Công dụng
 
@@ -345,7 +345,7 @@ Kết quả: pass `lint`, `typecheck`, `build`. Đã test thủ công qua previe
 ### Bài học (phát hiện khi nghiên cứu, tránh lặp lại)
 
 1. **Không cài Prisma bản mới nhất.** `npm view prisma dist-tags` cho thấy `latest` là **7.8.0**, nhưng Prisma 7 bắt buộc dùng "driver adapter" (`new PrismaClient({ adapter })` thay vì cách viết cổ điển `new PrismaClient()`), di chuyển cấu hình sang file `prisma.config.ts` mới, và có báo cáo lỗi khi kết hợp với Next.js 16 + Turbopack (đúng stack đang dùng). Đã ghim bản **6.x** (tag `prev` trên npm) để giữ cách dùng đơn giản, không cần adapter.
-2. **Vercel Storage sinh tên biến môi trường phụ thuộc "Custom Prefix" người dùng tự gõ** — gõ nhầm chính tả ("DATABSE" thay vì "DATABASE") vẫn hoạt động bình thường, vì code chỉ cần khớp đúng tên biến, không quan tâm nó có đúng chính tả tiếng Anh hay không. Không cần bắt người dùng làm lại, chỉ cần sửa `prisma/schema.prisma` cho khớp tên thật đã tạo ra (`DATABSE_DATABASE_URL`/`DATABSE_DATABASE_URL_UNPOOLED`) — luôn chạy `vercel env ls` để xem tên chính xác trước khi viết schema, đừng đoán.
+2. **Vercel Storage sinh tên biến môi trường phụ thuộc "Custom Prefix" người dùng tự gõ** — gõ nhầm chính tả ("DATABSE" thay vì "DATABASE") vẫn hoạt động bình thường, vì code chỉ cần khớp đúng tên biến, không quan tâm nó có đúng chính tả tiếng Anh hay không. Lúc mới phát hiện đã tạm sửa `prisma/schema.prisma` cho khớp tên gõ sai để không mất công làm lại — nhưng sau đó người dùng muốn tên đúng chính tả hẳn hoi, nên đã dùng `vercel env add`/`vercel env rm` (qua CLI, không cần vào lại dashboard) để tạo `DATABASE_URL`/`DATABASE_URL_UNPOOLED` đúng tên và xoá 2 biến gõ sai, rồi cập nhật lại schema. Bài học: luôn chạy `vercel env ls` để xem tên chính xác trước khi viết schema, đừng đoán — và nếu cần sửa lại sau, `vercel env add --value` là cách nhanh nhất nhưng **phải hỏi xác nhận người dùng trước** vì thao tác này khiến giá trị secret hiện ra trong lệnh chạy.
 3. **Prisma CLI (`prisma migrate dev`, `prisma studio`...) không tự đọc `.env.local`** như cách Next.js dev server làm — nó chỉ đọc `.env` mặc định. Cách xử lý không cần thêm file `.env` riêng (tránh 2 nguồn sự thật lệch nhau): chạy `set -a && source .env.local && set +a && npx prisma ...` để nạp biến vào shell trước khi gọi lệnh Prisma.
 
 ### Rủi ro
