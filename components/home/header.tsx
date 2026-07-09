@@ -43,7 +43,7 @@ export function Header({ categories, activeCategory, onCategoryChange }: HeaderP
             <span>|</span>
             <button>EN</button>
           </div>
-          <Link href="/login" className="home-nav-admin" aria-label="Đăng nhập quản trị">
+          <Link href="/login?callbackUrl=/admin" className="home-nav-admin" aria-label="Đăng nhập quản trị">
             <Lock size={16} />
           </Link>
         </div>
