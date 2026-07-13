@@ -4,6 +4,7 @@ import { useState } from "react";
 import { trackAddToCart } from "@/lib/analytics";
 import { LanguageProvider, useLanguage } from "@/lib/language-context";
 import { CtaBanner } from "@/components/home/cta-banner";
+import { FruitBoxSection } from "@/components/home/fruit-box-section";
 import { Header } from "@/components/home/header";
 import { Hero } from "@/components/home/hero";
 import { HowSection } from "@/components/home/how-section";
@@ -52,6 +53,7 @@ function HomeContent() {
         flash={flash}
         onAdd={handleAdd}
       />
+      <FruitBoxSection />
       <HowSection steps={content.processSteps} />
       <CtaBanner />
     </main>
