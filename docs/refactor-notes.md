@@ -371,3 +371,51 @@ npm run verify
 ```
 
 Kết quả: pass `lint`, `typecheck`, `build`. Đã test qua preview: đăng ký hợp lệ → tự đăng nhập → về `/` với session `role: "user"`; đăng ký trùng tên đăng nhập → báo lỗi đúng, không crash; mật khẩu xác nhận sai → chặn trước khi chạm database; đăng nhập admin (`/login` → `/admin/poster`) vẫn hoạt động bình thường. Đã query trực tiếp database xác nhận chỉ có đúng 1 user hợp lệ được lưu, sau đó xoá dữ liệu test.
+
+## 2026-07-14 - Hero banner ảnh thật + How-section dạng scrollytelling
+
+### Cập nhật
+
+- Thêm 4 ảnh hộp trái cây thật (nén qua `sips`, ~250-370KB/ảnh) vào `public/images/boxes/`: `hero-tao-cam.jpg`, `quy-trinh-buoc-1.jpg`, `quy-trinh-buoc-2.jpg`, `quy-trinh-buoc-3.jpg`.
+- `components/home/hero.tsx`: đổi bố cục 2 cột (chữ trái / panel xanh phải) sang banner ảnh full-width — ảnh làm nền `.home-hero`, lớp scrim gradient tối dần từ dưới lên để chữ trắng đọc được, giữ nguyên toàn bộ logic/copy/props cũ (card sản phẩm, nút "+", 2 tag nổi, `onAdd`/`flash`).
+- `components/home/how-section.tsx`: đổi từ lưới 4 card tĩnh trên nền gradient xanh sang dạng cuộn có nhịp (scrollytelling) — 4 khối chữ mô tả từng bước xen giữa 3 khối ảnh nền cố định (`background-attachment: fixed`), có thanh tiến độ cuộn ở trên và hiệu ứng chữ mờ dần hiện ra qua `IntersectionObserver`. Giữ nguyên toàn bộ copy 4 bước thật trong `home-strings.tsx`, chỉ thêm 1 chuỗi mới `how.stepPrefix` ("Bước"/"Step") cho nhãn nhỏ trên ảnh.
+- `app/home.css`: viết lại toàn bộ CSS cho `.home-hero*` và `.home-how-section`/`.home-process-*`, dọn các rule cũ không còn dùng (`.home-step-card`, `.home-steps-grid` và tham chiếu trong 2 media query).
+
+### Thuật ngữ
+
+- **Scrollytelling**: kỹ thuật kể chuyện qua cuộn trang — chữ chạy bình thường, xen giữa là các đoạn ảnh full màn hình. Ví dụ kinh điển: "Snow Fall" của New York Times (2012).
+- **`background-attachment: fixed`**: thuộc tính CSS khiến ảnh nền đứng yên so với khung nhìn (viewport) trong lúc nội dung phía trên vẫn cuộn bình thường, tạo cảm giác nội dung "trôi qua" ảnh. Không chạy trên Safari/Chrome iOS — đã có fallback `@supports (-webkit-touch-callout: none)` tự chuyển về cuộn thường trên di động.
+- **Scrim**: lớp phủ gradient màu tối (thường là đen/xanh đậm trong suốt dần) đặt giữa ảnh nền và chữ, để chữ trắng luôn đọc được bất kể vùng ảnh phía dưới sáng hay tối.
+- **`IntersectionObserver`**: API trình duyệt để biết khi nào 1 phần tử cuộn vào/ra khung nhìn, dùng để bật hiệu ứng "mờ dần hiện ra" cho từng khối chữ đúng lúc người dùng cuộn tới, không cần tính toán vị trí cuộn thủ công.
+
+### Công dụng
+
+- Trang chủ giờ dùng ảnh thật (chụp sản phẩm thật của Gọt Gòi Nè) thay vì card nhỏ + emoji, nhìn "thật" và đáng tin hơn với khách hàng lần đầu ghé trang — mục tiêu chính hiện tại là marketing/gây thiện cảm, chưa có backend đặt hàng thật.
+- Phần quy trình 4 bước từ dạng lưới tĩnh (đọc lướt qua, dễ bỏ sót) chuyển sang dạng cuộn có nhịp, giữ chân người xem lâu hơn và kể câu chuyện quy trình rõ ràng hơn.
+
+### Lợi ích
+
+- Không đổi bất kỳ copy/dữ liệu thật nào (`data/home.ts`, `home-strings.tsx`) — chỉ đổi cách trình bày, không có rủi ro sai lệch nội dung.
+- Không đụng tới `ProductsSection` (menu) — ảnh hộp mix hiện có chưa khớp chính xác với từng sản phẩm cụ thể trong menu thật, nên cố tình chưa dùng ở đó để tránh gắn nhầm ảnh cho sản phẩm (xem "Hướng phát triển").
+- Đã kiểm tra kỹ layout responsive (mobile 375px) và xác nhận không tràn ngang, card + 2 tag nổi trong hero không đè lên nhau.
+
+### Bài học (phát hiện khi làm, tránh lặp lại)
+
+1. Khi bỏ `background: <color>` cố định của 1 khung chứa (`.home-hero-right`) để nó "trong suốt" nhìn xuyên ảnh nền phía sau, các phần tử con định vị `position: absolute` bên trong (2 tag nổi) mất luôn không gian đệm (padding) vốn dùng làm mốc toạ độ — khiến chúng đè lên card chính. Phải giữ lại `padding` dù đã bỏ màu nền, vì padding vẫn quyết định kích thước khung chứa cho `position: absolute` bên trong dùng làm mốc.
+2. CSS shorthand `background: <gradient>` sẽ **ghi đè về giá trị mặc định** mọi thuộc tính `background-*` không được nêu tên tường minh (kể cả khi khai báo ở rule khác có độ ưu tiên thấp hơn nhưng đứng sau trong file) — nếu 1 rule cha đã set `background-attachment: fixed`, rule con chỉ nên dùng `background-image:`, không dùng `background:` shorthand, nếu không sẽ vô tình tắt mất `fixed`.
+3. Công cụ xem trước (preview tool) dùng trong lúc làm việc có `IntersectionObserver` không bao giờ bắn callback (đã tự kiểm chứng bằng 1 observer tối giản, không có bug logic nào cả) — giống hiện tượng `requestAnimationFrame` không chạy ổn định đã gặp trước đây. Không phải lỗi thật, chỉ là hạn chế riêng của công cụ preview; đã xác nhận phần còn lại (ảnh tải đúng, `background-attachment: fixed` đúng, thanh tiến độ cuộn theo `scroll` event bình thường) hoạt động tốt qua kiểm tra DOM trực tiếp thay vì chụp màn hình.
+
+### Rủi ro
+
+- 4 ảnh dùng trong bản này (`hero-tao-cam.jpg` + 3 ảnh quy trình) là ảnh hộp mix nhiều loại trái, không gắn với 1 sản phẩm cụ thể nào trong menu — phù hợp làm ảnh minh hoạ không khí (hero, quy trình) nhưng **chưa nên dùng để minh hoạ đúng 1 món hàng có giá cụ thể**.
+- Ảnh nền dùng `background-image` CSS thuần (không qua `next/image`) nên không tự sinh `srcset` đa độ phân giải theo thiết bị — chấp nhận được ở quy mô hiện tại (đã nén tay xuống 250-370KB/ảnh), nhưng nếu sau này có nhiều ảnh nền hơn nên cân nhắc `next/image` với `fill` để tối ưu tự động.
+
+### Quản trị rủi ro
+
+- Chỉ dùng ảnh hộp mix cho các vị trí mang tính "minh hoạ không khí" (hero, quy trình gọt-rửa-đóng gói), không gắn tên/giá sản phẩm cụ thể lên ảnh đó.
+- Đã kiểm tra qua DOM (`getComputedStyle`, network request status) rằng cả 4 ảnh tải thành công (200 OK) và `background-attachment: fixed` áp dụng đúng trên cả 3 khối quy trình.
+
+### Hướng phát triển
+
+- `ProductsSection` (menu hôm nay) **chưa** được áp ảnh thật — cần ảnh chụp đúng từng món riêng lẻ (không phải ảnh hộp mix nhiều loại) trước khi làm, để tránh gắn nhầm ảnh cho sản phẩm có giá cụ thể.
+- Có thể cân nhắc thêm 1 trang/section "Câu chuyện Gọt Gòi Nè" riêng dùng lại đúng pattern scrollytelling này với nội dung dài hơn, nếu muốn đầu tư thêm cho mảng marketing.

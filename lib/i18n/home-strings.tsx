@@ -56,6 +56,7 @@ type HomeStrings = {
     titleLine1: string;
     titleLine2: string;
     subtitle: string;
+    stepPrefix: string;
   };
   why: {
     eyebrow: string;
@@ -134,6 +135,7 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       titleLine1: "Từ vườn đến tay bạn",
       titleLine2: "trong 4 bước",
       subtitle: "Quy trình chặt chẽ - để mỗi hộp trái cây đến tay bạn đều tươi, sạch và an toàn tuyệt đối.",
+      stepPrefix: "Bước",
     },
     why: {
       eyebrow: "Tại sao chọn chúng tôi",
@@ -210,6 +212,7 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       titleLine1: "From the farm to you",
       titleLine2: "in 4 steps",
       subtitle: "A strict process - so every box of fruit reaches you fresh, clean, and completely safe.",
+      stepPrefix: "Step",
     },
     why: {
       eyebrow: "Why choose us",
