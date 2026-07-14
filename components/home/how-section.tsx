@@ -96,15 +96,13 @@ export function HowSection({ steps }: HowSectionProps) {
           </div>
 
           {index < BREAK_PHOTOS.length ? (
-            <div className="home-process-break-wrap">
-              <div className={`home-process-break ${BREAK_PHOTOS[index]}`}>
-                <div className="home-process-break-scrim" />
-                <div className="home-process-break-caption">
-                  <span className="home-process-break-eyebrow">
-                    {t.stepPrefix} {step.number}
-                  </span>
-                  <h3>{step.title}</h3>
-                </div>
+            <div className={`home-process-break ${BREAK_PHOTOS[index]}`}>
+              <div className="home-process-break-scrim" />
+              <div className="home-process-break-caption">
+                <span className="home-process-break-eyebrow">
+                  {t.stepPrefix} {step.number}
+                </span>
+                <h3>{step.title}</h3>
               </div>
             </div>
           ) : null}
