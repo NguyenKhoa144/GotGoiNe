@@ -1210,11 +1210,6 @@ input:focus-visible {
     padding-right: 16px;
   }
 
-  .home-process-break-wrap {
-    height: 125vh;
-    height: 125dvh;
-  }
-
   .home-nav-top {
     flex-wrap: wrap;
   }
