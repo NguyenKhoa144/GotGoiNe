@@ -26,6 +26,7 @@ html {
 main {
   background: var(--bg);
   color: var(--text);
+  overflow-x: clip;
 }
 
 a,
