@@ -1049,23 +1049,22 @@ input:focus-visible {
   max-width: 52ch;
 }
 
-.home-process-break {
+.home-process-break-wrap {
   position: relative;
+  height: 175vh;
+}
+
+.home-process-break {
+  position: sticky;
+  top: 0;
   width: 100%;
-  height: 82vh;
-  min-height: 420px;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   align-items: flex-end;
-  background-attachment: fixed;
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
-}
-
-@supports (-webkit-touch-callout: none) {
-  .home-process-break {
-    background-attachment: scroll;
-  }
 }
 
 .home-process-break-1 {
