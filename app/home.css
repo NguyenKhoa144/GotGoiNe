@@ -1259,4 +1259,15 @@ input:focus-visible {
   .home-cta-banner {
     padding: 36px 24px;
   }
+
+  .home-process-break {
+    height: auto;
+    aspect-ratio: 1 / 1;
+    min-height: 300px;
+  }
+
+  .home-process-break-img {
+    top: -15%;
+    height: 130%;
+  }
 }

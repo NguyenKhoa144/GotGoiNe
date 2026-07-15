@@ -89,7 +89,8 @@ export function HowSection({ steps }: HowSectionProps) {
           1,
           Math.max(0, (vh - rect.top) / (vh + rect.height)),
         );
-        const offset = (progress - 0.5) * rect.height * 1.24;
+        const travel = img.getBoundingClientRect().height - rect.height;
+        const offset = (progress - 0.5) * travel;
         img.style.transform = `translateY(${offset}px)`;
       }
     }
