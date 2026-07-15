@@ -64,6 +64,50 @@ export function HowSection({ steps }: HowSectionProps) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const items = Array.from(
+      root.querySelectorAll<HTMLElement>("[data-parallax]"),
+    )
+      .map((el) => ({
+        el,
+        img: el.querySelector<HTMLElement>(".home-process-break-img"),
+      }))
+      .filter((item): item is { el: HTMLElement; img: HTMLElement } => item.img !== null);
+
+    let rafId = 0;
+
+    function update() {
+      rafId = 0;
+      const vh = window.innerHeight;
+      for (const { el, img } of items) {
+        const rect = el.getBoundingClientRect();
+        const progress = Math.min(
+          1,
+          Math.max(0, (vh - rect.top) / (vh + rect.height)),
+        );
+        const offset = (progress - 0.5) * rect.height * 1.24;
+        img.style.transform = `translateY(${offset}px)`;
+      }
+    }
+
+    function onScroll() {
+      if (!rafId) rafId = requestAnimationFrame(update);
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   return (
     <div ref={rootRef}>
       <section className="home-how-section" id="process">
@@ -96,7 +140,8 @@ export function HowSection({ steps }: HowSectionProps) {
           </div>
 
           {index < BREAK_PHOTOS.length ? (
-            <div className={`home-process-break ${BREAK_PHOTOS[index]}`}>
+            <div className="home-process-break" data-parallax>
+              <div className={`home-process-break-img ${BREAK_PHOTOS[index]}`} />
               <div className="home-process-break-scrim" />
               <div className="home-process-break-caption">
                 <span className="home-process-break-eyebrow">

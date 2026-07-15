@@ -1053,19 +1053,23 @@ input:focus-visible {
   position: relative;
   width: 100%;
   height: 82vh;
+  height: 82dvh;
   min-height: 420px;
   display: flex;
   align-items: flex-end;
-  background-attachment: fixed;
+  overflow: hidden;
+}
+
+.home-process-break-img {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -62%;
+  height: 224%;
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
-}
-
-@supports (-webkit-touch-callout: none) {
-  .home-process-break {
-    background-attachment: scroll;
-  }
+  will-change: transform;
 }
 
 .home-process-break-1 {
