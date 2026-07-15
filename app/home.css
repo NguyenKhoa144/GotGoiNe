@@ -1262,12 +1262,12 @@ input:focus-visible {
 
   .home-process-break {
     height: auto;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 6 / 5;
     min-height: 300px;
   }
 
   .home-process-break-img {
-    top: -15%;
-    height: 130%;
+    top: -30%;
+    height: 160%;
   }
 }
