@@ -88,7 +88,7 @@
 }
 
 .poster {
-  --poster-radius: 18px;
+  --poster-radius: 36px;
   width: 340px;
   height: 604px;
   background: #eaf0e3;

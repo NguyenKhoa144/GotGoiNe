@@ -541,3 +541,22 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build. Chờ người dùng xác nhận lại trên Safari thật sau khi deploy.
+
+## 2026-07-23 (tiếp) - Không phải bug: người dùng muốn bo tròn nhiều hơn hẳn
+
+### Cập nhật
+
+- Sau khi kiểm chứng kỹ (đo bằng lưới điểm `elementsFromPoint`, khớp chính xác đường tròn 18px lý thuyết ở mọi mẫu), xác nhận 2 lần sửa trước **không hề có bug** — CSS đã tôn trọng đúng bán kính 18px từ đầu. Điều người dùng thực sự muốn không phải sửa lỗi, mà là **tăng độ bo tròn lên** ("bo tròn nhất có thể").
+- Tăng `--poster-radius` từ `18px` → `36px` (gấp đôi) tại `.poster` — do `.rightCol` đã tham chiếu `var(--poster-radius)` từ 2 lần sửa trước, chỉ cần đổi 1 chỗ là card + góc phải cùng bo tròn hơn đồng bộ.
+
+### Bài học (tránh lặp lại)
+
+- Khi người dùng gửi ảnh chê "chưa ổn" nhiều lần liên tiếp dù code đã đo được là đúng, nên hỏi thẳng "đây là lỗi kỹ thuật hay không thích thiết kế" sớm hơn, thay vì tiếp tục đoán và vá kỹ thuật — tiết kiệm được 1-2 vòng sửa không cần thiết. `document.elementFromPoint`/`elementsFromPoint` bỏ qua phần tử có `pointer-events: none` khi hit-test — nếu dùng để kiểm tra vùng bị clip, phải tạm gỡ `pointer-events: none` (chỉ ảnh hưởng hit-test, không ảnh hưởng render) trước khi đo, nếu không kết quả sẽ sai lệch mà không báo lỗi gì.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass lint, typecheck, build. Tự dựng route debug tạm (đã xoá trước khi commit) để xem trực tiếp bằng `zoom` CSS + screenshot, xác nhận góc bo tròn rõ hơn hẳn so với 18px cũ.
