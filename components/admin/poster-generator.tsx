@@ -1,37 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
-import {
-  Leaf,
-  ArrowUp,
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUpLeft,
-  ArrowUpRight,
-  ArrowDownLeft,
-  ArrowDownRight,
-} from "lucide-react";
+import { Leaf } from "lucide-react";
 import { lookupFruit, type Fruit } from "@/data/poster";
 import styles from "./poster-generator.module.css";
 
 const DEFAULT_HERO_POSITION = { x: 50, y: 50 };
-const NUDGE_STEP = 4;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 2.5;
 
 function clampPercent(value: number) {
   return Math.min(100, Math.max(0, value));
 }
-
-const NUDGE_DIRECTIONS: { label: string; icon: typeof ArrowUp; dx: number; dy: number }[] = [
-  { label: "Trên trái", icon: ArrowUpLeft, dx: -1, dy: -1 },
-  { label: "Trên", icon: ArrowUp, dx: 0, dy: -1 },
-  { label: "Trên phải", icon: ArrowUpRight, dx: 1, dy: -1 },
-  { label: "Trái", icon: ArrowLeft, dx: -1, dy: 0 },
-  { label: "Phải", icon: ArrowRight, dx: 1, dy: 0 },
-  { label: "Dưới trái", icon: ArrowDownLeft, dx: -1, dy: 1 },
-  { label: "Dưới", icon: ArrowDown, dx: 0, dy: 1 },
-  { label: "Dưới phải", icon: ArrowDownRight, dx: 1, dy: 1 },
-];
 
 const DEFAULT_FRUIT_INPUT = "mận, xoài, ổi, thanh long, dưa hấu, cam, bưởi";
 
@@ -39,6 +19,10 @@ const POSTER_WIDTH = 340;
 const POSTER_HEIGHT = Math.round((POSTER_WIDTH * 1920) / 1080);
 const EXPORT_WIDTH = 1080;
 const EXPORT_SCALE = EXPORT_WIDTH / POSTER_WIDTH;
+// .rightCol is a straight 50/50 split of the card (see poster-generator.module.css) —
+// used to compute how far the hero photo must scale to cover it.
+const HERO_WIDTH = POSTER_WIDTH / 2;
+const HERO_HEIGHT = POSTER_HEIGHT;
 
 const DAY_NAMES = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
 
@@ -81,7 +65,9 @@ export function PosterGenerator() {
   const [fruitInput, setFruitInput] = useState(DEFAULT_FRUIT_INPUT);
   const [poster, setPoster] = useState<PosterData | null>(() => buildPoster(DEFAULT_FRUIT_INPUT));
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [heroImageSize, setHeroImageSize] = useState<{ width: number; height: number } | null>(null);
   const [heroPosition, setHeroPosition] = useState(DEFAULT_HERO_POSITION);
+  const [heroZoom, setHeroZoom] = useState(MIN_ZOOM);
   const [isDragging, setIsDragging] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const posterRef = useRef<HTMLDivElement>(null);
@@ -105,18 +91,28 @@ export function PosterGenerator() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      setHeroImageUrl(e.target?.result as string);
+      const url = e.target?.result as string;
+      setHeroImageUrl(url);
       setHeroPosition(DEFAULT_HERO_POSITION);
+      setHeroZoom(MIN_ZOOM);
+      setHeroImageSize(null);
+      const img = new Image();
+      img.onload = () => setHeroImageSize({ width: img.naturalWidth, height: img.naturalHeight });
+      img.src = url;
     };
     reader.readAsDataURL(file);
   }
 
-  function handleNudge(dx: number, dy: number) {
-    setHeroPosition((prev) => ({
-      x: clampPercent(prev.x + dx * NUDGE_STEP),
-      y: clampPercent(prev.y + dy * NUDGE_STEP),
-    }));
-  }
+  // Scale needed so the photo covers the (fixed-size) hero column, times the
+  // user's zoom — larger than 1 gives the photo room to pan on both axes
+  // instead of just whichever axis "cover" alone leaves slack on.
+  const heroCoverScale = heroImageSize
+    ? Math.max(HERO_WIDTH / heroImageSize.width, HERO_HEIGHT / heroImageSize.height)
+    : null;
+  const heroBackgroundSize =
+    heroCoverScale && heroImageSize
+      ? `${heroImageSize.width * heroCoverScale * heroZoom}px ${heroImageSize.height * heroCoverScale * heroZoom}px`
+      : "cover";
 
   function handleHeroPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     const el = heroImgRef.current;
@@ -258,6 +254,7 @@ export function PosterGenerator() {
                     style={{
                       backgroundImage: `url(${heroImageUrl})`,
                       backgroundPosition: `${heroPosition.x}% ${heroPosition.y}%`,
+                      backgroundSize: heroBackgroundSize,
                     }}
                     onPointerDown={handleHeroPointerDown}
                     aria-label={`Kéo để chỉnh vị trí ảnh — hiện tại ${Math.round(heroPosition.x)}%, ${Math.round(heroPosition.y)}%`}
@@ -278,61 +275,31 @@ export function PosterGenerator() {
 
           {heroImageUrl ? (
             <div className={styles.positionControls}>
-              <div className={styles.nudgeGrid}>
-                {NUDGE_DIRECTIONS.slice(0, 3).map(({ label, icon: Icon, dx, dy }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    className={styles.nudgeBtn}
-                    onClick={() => handleNudge(dx, dy)}
-                    aria-label={label}
-                  >
-                    <Icon size={14} />
-                  </button>
-                ))}
-                {(() => {
-                  const left = NUDGE_DIRECTIONS[3];
-                  const right = NUDGE_DIRECTIONS[4];
-                  return (
-                    <>
-                      <button
-                        type="button"
-                        className={styles.nudgeBtn}
-                        onClick={() => handleNudge(left.dx, left.dy)}
-                        aria-label={left.label}
-                      >
-                        <ArrowLeft size={14} />
-                      </button>
-                      <span className={styles.nudgeCenter} aria-hidden="true" />
-                      <button
-                        type="button"
-                        className={styles.nudgeBtn}
-                        onClick={() => handleNudge(right.dx, right.dy)}
-                        aria-label={right.label}
-                      >
-                        <ArrowRight size={14} />
-                      </button>
-                    </>
-                  );
-                })()}
-                {NUDGE_DIRECTIONS.slice(5, 8).map(({ label, icon: Icon, dx, dy }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    className={styles.nudgeBtn}
-                    onClick={() => handleNudge(dx, dy)}
-                    aria-label={label}
-                  >
-                    <Icon size={14} />
-                  </button>
-                ))}
+              <div className={styles.zoomRow}>
+                <label htmlFor="heroZoom" className={styles.zoomLabel}>
+                  🔍 Thu phóng
+                </label>
+                <input
+                  id="heroZoom"
+                  type="range"
+                  className={styles.zoomSlider}
+                  min={MIN_ZOOM}
+                  max={MAX_ZOOM}
+                  step={0.05}
+                  value={heroZoom}
+                  onChange={(e) => setHeroZoom(Number(e.target.value))}
+                />
+                <span className={styles.zoomValue}>{Math.round((heroZoom / MIN_ZOOM) * 100)}%</span>
               </div>
               <div className={styles.positionSide}>
-                <p className={styles.positionHint}>Bấm mũi tên hoặc kéo trực tiếp trên ảnh để chỉnh vị trí hiển thị.</p>
+                <p className={styles.positionHint}>Kéo trực tiếp trên ảnh để chỉnh vị trí hiển thị.</p>
                 <button
                   type="button"
                   className={styles.resetPositionBtn}
-                  onClick={() => setHeroPosition(DEFAULT_HERO_POSITION)}
+                  onClick={() => {
+                    setHeroPosition(DEFAULT_HERO_POSITION);
+                    setHeroZoom(MIN_ZOOM);
+                  }}
                 >
                   Đặt lại vị trí
                 </button>

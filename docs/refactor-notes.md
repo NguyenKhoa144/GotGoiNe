@@ -673,3 +673,30 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build.
+
+## 2026-07-23 (tiếp) - Bỏ nút mũi tên, thêm thu phóng — giải thích tại sao trước đó chỉ chỉnh được ngang
+
+### Cập nhật
+
+- Bỏ hẳn cụm 8 nút mũi tên (thừa so với kéo thả trực tiếp).
+- Thêm thanh trượt "🔍 Thu phóng" (100%-250%). Đây không chỉ là tính năng mới mà còn **sửa đúng nguyên nhân gốc** của việc "chỉ chỉnh được ngang": ảnh do người dùng tải lên thường có tỉ lệ ngang (rộng hơn cao), trong khi khung ảnh hero rất cao hẹp (170×604px, tỉ lệ ~1:3.55). Với `background-size: cover`, trình duyệt luôn scale theo chiều bị giới hạn nhiều hơn — với khung cao hẹp này, hầu như luôn là chiều cao khớp khít container (dư 0px để kéo dọc), còn chiều ngang dư rất nhiều (kéo ngang thoải mái). Đã tính cụ thể: ảnh test 400×200px → sau `cover` ra đúng 1208×604px, chiều cao **khớp chính xác** container (604px) → kéo dọc không có tác dụng gì (hệ số nhân trong công thức `background-position` bằng 0), đúng như người dùng phản ánh — không phải bug, là hệ quả hình học tất yếu của `cover` trong khung tỉ lệ cực đoan này.
+- Phóng to (`heroZoom` > 100%) làm ảnh lớn hơn mức "vừa khít" tối thiểu ở **cả 2 chiều**, tạo dư địa kéo dọc thật sự. Đã tính tay và đo lại: ở 180%, ảnh test 400×200 scale ra 2174×1087px, chiều cao dư 483px so với container → kéo dọc giờ có tác dụng rõ ràng.
+- `components/admin/poster-generator.tsx`: thêm state `heroImageSize` (kích thước gốc ảnh, đọc qua `new Image()` sau khi tải lên) + `heroZoom`; tính `heroBackgroundSize` bằng công thức `max(khung_rộng/ảnh_rộng, khung_cao/ảnh_cao) × zoom`, gán trực tiếp vào `backgroundSize` inline thay vì để CSS cố định `cover`. Cả `heroPosition` lẫn `heroZoom` đều reset khi tải ảnh mới.
+- Bỏ `NUDGE_DIRECTIONS`, `handleNudge`, import 8 icon mũi tên không còn dùng.
+
+### Rủi ro
+
+- `heroCoverScale`/`heroBackgroundSize` phụ thuộc `heroImageSize` — trong khoảnh khắc rất ngắn giữa lúc `heroImageUrl` được set và `Image().onload` hoàn tất, `heroBackgroundSize` fallback về chuỗi `"cover"` (không lỗi, chỉ là 1-2 frame đầu chưa áp zoom, không đáng kể với ảnh nhỏ qua data URL).
+
+### Quản trị rủi ro
+
+- Kiểm chứng lại đúng bằng ảnh test 4 màu tỉ lệ ngang thật (400×200, mô phỏng đúng tình huống "ảnh rộng, khung cao hẹp" gây ra lỗi ban đầu): xác nhận ở 100% zoom, kéo dọc đổi state nhưng **không đổi hình ảnh** (đúng như người dùng mô tả); ở 180% zoom, kéo dọc đổi cả state lẫn hình ảnh rõ rệt.
+- Kiểm chứng lại luồng xuất PNG thật (không chỉ preview) ở trạng thái đã zoom + lệch tâm — màu pixel trong file xuất ra khớp đúng theo công thức tính tay (ranh giới màu ở đúng 55.6% theo cả chiều ngang lẫn dọc), xác nhận cơ chế `background-size` bằng px tường minh (không phải từ khoá `cover`) vẫn được `html2canvas` xử lý đúng.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass lint, typecheck, build.

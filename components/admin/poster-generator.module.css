@@ -302,7 +302,6 @@
 .heroImgWrap {
   position: absolute;
   inset: 0;
-  background-size: cover;
   background-repeat: no-repeat;
   cursor: grab;
   pointer-events: auto;
@@ -404,37 +403,30 @@
   margin-bottom: 4px;
 }
 
-.nudgeGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 28px);
-  grid-template-rows: repeat(3, 28px);
-  gap: 3px;
-}
-
-.nudgeBtn {
+.zoomRow {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: #fff;
-  border: 1.5px solid var(--green-dark);
+  gap: 8px;
+}
+
+.zoomLabel {
+  font-size: 12px;
+  font-weight: 700;
   color: var(--green-dark);
-  border-radius: 6px;
-  padding: 0;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
 }
 
-.nudgeBtn:hover {
-  background: #eaf0e3;
+.zoomSlider {
+  width: 110px;
+  accent-color: var(--green-dark);
 }
 
-.nudgeBtn:active {
-  background: var(--green-dark);
-  color: #fff;
-}
-
-.nudgeCenter {
-  visibility: hidden;
+.zoomValue {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green-mid);
+  min-width: 38px;
+  text-align: right;
 }
 
 .positionSide {
