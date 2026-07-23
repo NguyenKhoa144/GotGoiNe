@@ -22,34 +22,34 @@ export default function RegisterPage() {
       >
         <h1 className="mb-6 text-center text-xl font-extrabold text-[#123f1c]">Đăng ký</h1>
 
-        <label className="mb-1 block text-sm font-semibold text-[#1E5C2D]">Họ tên</label>
+        <label className="mb-1 block text-sm font-semibold text-[var(--green-dark)]">Họ tên</label>
         <input
           name="fullName"
           type="text"
           required
           autoFocus
           autoComplete="name"
-          className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
+          className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[var(--green-mid)]"
         />
 
-        <label className="mb-1 block text-sm font-semibold text-[#1E5C2D]">Tên đăng nhập</label>
+        <label className="mb-1 block text-sm font-semibold text-[var(--green-dark)]">Tên đăng nhập</label>
         <input
           name="username"
           type="text"
           required
           autoComplete="off"
-          className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
+          className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[var(--green-mid)]"
         />
 
-        <label className="mb-1 block text-sm font-semibold text-[#1E5C2D]">Ngày sinh</label>
+        <label className="mb-1 block text-sm font-semibold text-[var(--green-dark)]">Ngày sinh</label>
         <input
           name="dateOfBirth"
           type="date"
           required
-          className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
+          className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[var(--green-mid)]"
         />
 
-        <label className="mb-1 block text-sm font-semibold text-[#1E5C2D]">Số điện thoại</label>
+        <label className="mb-1 block text-sm font-semibold text-[var(--green-dark)]">Số điện thoại</label>
         <input
           name="phone"
           type="tel"
@@ -58,18 +58,18 @@ export default function RegisterPage() {
           pattern="0[35789][0-9]{8}"
           maxLength={10}
           title="Số di động Việt Nam, 10 số, bắt đầu bằng 03/05/07/08/09"
-          className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
+          className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[var(--green-mid)]"
         />
 
-        <label className="mb-1 block text-sm font-semibold text-[#1E5C2D]">Email</label>
+        <label className="mb-1 block text-sm font-semibold text-[var(--green-dark)]">Email</label>
         <input
           name="email"
           type="email"
           required
-          className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
+          className="mb-4 w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 text-[#1a2e1c] outline-none transition-colors focus:border-[var(--green-mid)]"
         />
 
-        <label className="mb-1 block text-sm font-semibold text-[#1E5C2D]">Mật khẩu</label>
+        <label className="mb-1 block text-sm font-semibold text-[var(--green-dark)]">Mật khẩu</label>
         <div className="relative mb-4">
           <input
             name="password"
@@ -77,19 +77,19 @@ export default function RegisterPage() {
             required
             minLength={6}
             autoComplete="new-password"
-            className="w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 pr-10 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
+            className="w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 pr-10 text-[#1a2e1c] outline-none transition-colors focus:border-[var(--green-mid)]"
           />
           <button
             type="button"
             onClick={() => setShowPassword((visible) => !visible)}
             aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-1 text-[#4a6e4d] transition-colors hover:text-[#1E5C2D]"
+            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-1 text-[#4a6e4d] transition-colors hover:text-[var(--green-dark)]"
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
 
-        <label className="mb-1 block text-sm font-semibold text-[#1E5C2D]">Xác nhận mật khẩu</label>
+        <label className="mb-1 block text-sm font-semibold text-[var(--green-dark)]">Xác nhận mật khẩu</label>
         <div className="relative mb-4">
           <input
             name="confirmPassword"
@@ -97,13 +97,13 @@ export default function RegisterPage() {
             required
             minLength={6}
             autoComplete="new-password"
-            className="w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 pr-10 text-[#1a2e1c] outline-none transition-colors focus:border-[#3A7D44]"
+            className="w-full rounded-lg border-2 border-white/70 bg-white/70 px-3 py-2 pr-10 text-[#1a2e1c] outline-none transition-colors focus:border-[var(--green-mid)]"
           />
           <button
             type="button"
             onClick={() => setShowConfirmPassword((visible) => !visible)}
             aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-1 text-[#4a6e4d] transition-colors hover:text-[#1E5C2D]"
+            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-1 text-[#4a6e4d] transition-colors hover:text-[var(--green-dark)]"
           >
             {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
@@ -121,14 +121,14 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-lg bg-[#1E5C2D] py-2.5 font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#3A7D44] hover:shadow-lg active:translate-y-0 active:scale-[0.98] disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+          className="w-full rounded-lg bg-[var(--green-dark)] py-2.5 font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-mid)] hover:shadow-lg active:translate-y-0 active:scale-[0.98] disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none"
         >
           {isPending ? "Đang đăng ký..." : "Đăng ký"}
         </button>
 
         <p className="mt-4 text-center text-sm text-[#4a6e4d]">
           Đã có tài khoản?{" "}
-          <Link href="/login" className="font-semibold text-[#1E5C2D] transition-colors hover:underline">
+          <Link href="/login" className="font-semibold text-[var(--green-dark)] transition-colors hover:underline">
             Đăng nhập
           </Link>
         </p>

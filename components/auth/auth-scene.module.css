@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #f0f9e1;
+  background: var(--bg);
   padding: 1rem;
 }
 
