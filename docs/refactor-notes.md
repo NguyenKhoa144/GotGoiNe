@@ -599,3 +599,23 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build. Đang chờ người dùng xác nhận qua ảnh chụp `/admin/poster` thật trước khi coi là xong.
+
+## 2026-07-23 (tiếp) - Sửa chữ mô tả bị chật/tràn sau khi thu hẹp cột trái
+
+### Cập nhật
+
+- Ảnh chụp `/admin/poster` thật người dùng gửi sau lần redesign trước cho thấy mô tả các món dài (XOÀI, CAM...) bị xuống dòng chật, gần như chạm vào khối màu bên phải — hệ quả của việc thu hẹp `.leftCol` (195px → 165px) quá tay để nhường chỗ cho khối ảnh lớn hơn.
+- Cân bằng lại: `.leftCol` 165px → 185px, `.rightCol` 190px → 165px, `.heroOval` 245px → 215px (right offset -35px → -30px) — khối ảnh vẫn lớn hơn hẳn bản gốc (145px), nhưng nhường lại đủ chỗ cho chữ.
+- Đã đo lại bằng script (không chỉ nhìn ảnh): kiểm tra `clientHeight / lineHeight` của từng `.menuDesc` — xác nhận cả 7 món mẫu hiện đều gọn 1 dòng, không còn món nào xuống dòng.
+
+### Bài học
+
+- Khi đổi tỉ lệ cột trong 1 layout co giãn theo nội dung (fruit list dài ngắn khác nhau tuỳ người dùng nhập), không đủ chỉ xem 1 bộ dữ liệu mẫu ngắn qua ảnh chụp — nên đo trực tiếp số dòng chữ bằng code (`clientHeight`/`lineHeight`) thay vì chỉ nhìn mắt, để chắc chắn không có món nào (đặc biệt mô tả dài) bị tràn.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass lint, typecheck, build. Đo lại 7/7 mô tả mẫu đều 1 dòng qua route debug tạm (đã xoá trước khi commit).
