@@ -101,7 +101,7 @@
 }
 
 .leftCol {
-  width: 185px;
+  width: 170px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -257,7 +257,7 @@
   position: absolute;
   right: 0;
   top: 0;
-  width: 165px;
+  width: 170px;
   height: 100%;
   display: flex;
   align-items: center;
@@ -275,17 +275,13 @@
 }
 
 .heroOval {
-  width: 215px;
-  height: 92%;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(160deg, var(--green-mid) 0%, var(--green-dark) 60%, #163f20 100%);
-  border-radius: 50% 0 0 50%;
-  position: absolute;
-  right: -30px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .heroInner {
@@ -294,7 +290,6 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding-left: 10px;
   height: 100%;
 }
 
@@ -307,8 +302,6 @@
 .heroImgWrap {
   position: absolute;
   inset: 0;
-  border-radius: 50% 0 0 50%;
-  overflow: hidden;
 }
 
 .heroImgWrap img {

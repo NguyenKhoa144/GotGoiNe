@@ -619,3 +619,26 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build. Đo lại 7/7 mô tả mẫu đều 1 dòng qua route debug tạm (đã xoá trước khi commit).
+
+## 2026-07-23 (tiếp) - Bỏ hình vòm, chia thẳng 50/50
+
+### Cập nhật
+
+- Người dùng tải ảnh thật lên thử (khớp khá tốt với khối dome), nhưng sau đó quyết định đổi hướng: bỏ hẳn hiệu ứng cong (dome/oval), chia poster thành 2 nửa thẳng đứng đơn giản (cột chữ | ảnh) — không còn theo sát ảnh tham khảo dome nữa.
+- `.leftCol`/`.rightCol` đổi về đúng 170px/170px (= 340px / 2).
+- `.heroOval`: bỏ `border-radius: 50% 0 0 50%`, bỏ `position: absolute` + `right: -Npx` (kỹ thuật tràn viền để tạo hình oval không còn cần nữa) → chỉ còn `width: 100%; height: 100%` lấp đầy `.rightCol` như 1 khối chữ nhật thường.
+- `.heroImgWrap`: bỏ `border-radius: 50% 0 0 50%`, chỉ còn `position: absolute; inset: 0`.
+- Góc ngoài cùng (top-right/bottom-right của card) vẫn giữ bo tròn qua `.rightCol`'s `border-top-right-radius`/`border-bottom-right-radius` + `clip-path` (từ các lần sửa trước trong ngày) — không đổi.
+- Code gọn hơn hẳn: bỏ được toàn bộ phần tính toán offset tràn viền cho hình oval.
+
+### Rủi ro
+
+- Mô tả dài nhất trong 7 món mẫu (CAM: "Bổ sung vitamin C, tăng đề kháng") xuống 2 dòng ở bề rộng cột 170px (đã đo bằng `clientHeight/lineHeight`) — không phải lỗi, chỉ là ngắt dòng bình thường khi mô tả dài, không tràn/đè lên vùng ảnh như lần lỗi trước. Chấp nhận được, không phải mọi món đều 1 dòng.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass lint, typecheck, build. Xem trực tiếp qua route debug tạm (đã xoá trước khi commit): đường phân chia thẳng, góc ngoài vẫn tròn đều, không có khoảng hở hay lệch.
