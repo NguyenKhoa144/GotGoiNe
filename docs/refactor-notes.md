@@ -642,3 +642,34 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build. Xem trực tiếp qua route debug tạm (đã xoá trước khi commit): đường phân chia thẳng, góc ngoài vẫn tròn đều, không có khoảng hở hay lệch.
+
+## 2026-07-23 (tiếp) - Nút tinh chỉnh vị trí ảnh hero (8 hướng + kéo thả)
+
+### Cập nhật
+
+- Nghiên cứu nguyên lý trước khi làm: `object-fit: cover` (đã dùng sẵn) chỉ giải quyết việc ảnh không bị méo/kéo giãn ("bể ảnh") — nó cắt ảnh để lấp đầy khung, không làm méo tỉ lệ. Vấn đề còn lại là **điểm neo cắt** (`object-position`) luôn mặc định ở giữa ảnh, không có cách chọn phần nào của ảnh được giữ lại — đây mới là thứ cần thêm nút chỉnh, đúng nguyên lý "focal point" mà Facebook/Instagram dùng cho ảnh bìa.
+- **Phát hiện quan trọng làm đổi cả cách implement**: `html2canvas` (thư viện dùng để xuất PNG — chức năng chính của tool) có bug tồn đọng lâu năm, bỏ qua hoàn toàn `object-fit`/`object-position` trên thẻ `<img>`, ảnh xuất ra sẽ bị kéo méo thay vì đúng như xem trước (xem [html2canvas#725](https://github.com/niklasvh/html2canvas/issues/725), [#1064](https://github.com/niklasvh/html2canvas/issues/1064)). Cách né lỗi được cộng đồng xác nhận: dùng `<div>` với `background-image` + `background-position` thay vì thẻ `<img>` — `html2canvas` xử lý đúng background-position. Đã đổi `.heroImgWrap` từ `<img>` sang `<div>` nền ảnh vì lý do này, không chỉ để thêm tính năng mới.
+- `components/admin/poster-generator.tsx`: thêm state `heroPosition` (%, mặc định 50/50), reset về mặc định mỗi khi tải ảnh mới; 8 nút mũi tên (dùng icon có sẵn từ `lucide-react`) di chuyển 4% mỗi lần bấm; kéo thả trực tiếp trên ảnh qua Pointer Events (`pointerdown` trên ảnh, `pointermove`/`pointerup` gắn tạm vào `window` trong lúc kéo); nút "Đặt lại vị trí".
+- `components/admin/poster-generator.module.css`: `.heroImgWrap` thêm `background-size:cover`, `cursor:grab`/`grabbing`, và **`pointer-events: auto`** để ghi đè `pointer-events: none` của `.rightCol` cha (`.rightCol` cố tình tắt pointer-events để không chặn click khi chưa có ảnh — phải bật lại riêng cho đúng phần tử ảnh mới kéo được). Thêm cụm nút 3x3 (`.nudgeGrid`/`.nudgeBtn`) tái dùng phong cách viền xanh của `.uploadBtn` sẵn có, không tạo style thứ 3.
+
+### Thuật ngữ
+
+- **Focal point (điểm neo tiêu điểm)**: toạ độ % đánh dấu phần quan trọng nhất của ảnh cần luôn hiển thị khi ảnh bị cắt để lấp khung có tỉ lệ khác — cơ chế đứng sau tính năng "kéo ảnh bìa" quen thuộc trên Facebook.
+- **Pointer Events**: API trình duyệt hợp nhất chuột + cảm ứng (`pointerdown/pointermove/pointerup`) thành 1 bộ sự kiện, không cần viết riêng cho mouse và touch.
+
+### Rủi ro
+
+- Chưa có điều khiển bàn phím đầy đủ cho việc kéo (chỉ có `tabIndex` để focus được, chưa bind phím mũi tên) — với người dùng chỉ có 1 tài khoản admin dùng chuột/cảm ứng, chấp nhận được ở quy mô hiện tại.
+
+### Quản trị rủi ro
+
+- Kiểm chứng đúng theo đúng lo ngại kỹ thuật đã nêu ở trên (không chỉ nhìn preview): dựng ảnh test 4 màu (đỏ/xanh dương/xanh lá/vàng), kéo lệch vị trí, gọi thẳng luồng `handleDownload` thật (chặn tạm `HTMLAnchorElement.prototype.click` để lấy data URL thay vì tải file), decode lại PNG xuất ra và đọc màu pixel tại đúng toạ độ — **màu khớp chính xác với vị trí đã kéo trên preview** (đỏ ở trên, xanh lá ở dưới), xác nhận file xuất ra không bị lỗi html2canvas đã lo từ đầu.
+- Đã thử đủ 3 cách tương tác: bấm nút mũi tên (đo qua `aria-label`), kéo chuột (`left_click_drag`), và nút đặt lại — tất cả đều đúng.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass lint, typecheck, build.

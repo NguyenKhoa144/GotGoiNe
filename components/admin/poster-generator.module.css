@@ -302,12 +302,15 @@
 .heroImgWrap {
   position: absolute;
   inset: 0;
+  background-size: cover;
+  background-repeat: no-repeat;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
 }
 
-.heroImgWrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.heroImgWrap.isDragging {
+  cursor: grabbing;
 }
 
 .bgCircle1 {
@@ -386,4 +389,75 @@
 
 .heroFileInput {
   display: none;
+}
+
+.positionControls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 16px;
+  box-shadow: 0 4px 20px rgba(30, 92, 45, 0.08);
+  margin-bottom: 4px;
+}
+
+.nudgeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 28px);
+  grid-template-rows: repeat(3, 28px);
+  gap: 3px;
+}
+
+.nudgeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1.5px solid var(--green-dark);
+  color: var(--green-dark);
+  border-radius: 6px;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nudgeBtn:hover {
+  background: #eaf0e3;
+}
+
+.nudgeBtn:active {
+  background: var(--green-dark);
+  color: #fff;
+}
+
+.nudgeCenter {
+  visibility: hidden;
+}
+
+.positionSide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.positionHint {
+  font-size: 11px;
+  color: #4a6e4d;
+  max-width: 160px;
+  line-height: 1.4;
+}
+
+.resetPositionBtn {
+  background: none;
+  border: none;
+  color: var(--green-mid);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
 }

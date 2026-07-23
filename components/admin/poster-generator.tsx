@@ -1,9 +1,37 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Leaf } from "lucide-react";
+import {
+  Leaf,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpLeft,
+  ArrowUpRight,
+  ArrowDownLeft,
+  ArrowDownRight,
+} from "lucide-react";
 import { lookupFruit, type Fruit } from "@/data/poster";
 import styles from "./poster-generator.module.css";
+
+const DEFAULT_HERO_POSITION = { x: 50, y: 50 };
+const NUDGE_STEP = 4;
+
+function clampPercent(value: number) {
+  return Math.min(100, Math.max(0, value));
+}
+
+const NUDGE_DIRECTIONS: { label: string; icon: typeof ArrowUp; dx: number; dy: number }[] = [
+  { label: "Trên trái", icon: ArrowUpLeft, dx: -1, dy: -1 },
+  { label: "Trên", icon: ArrowUp, dx: 0, dy: -1 },
+  { label: "Trên phải", icon: ArrowUpRight, dx: 1, dy: -1 },
+  { label: "Trái", icon: ArrowLeft, dx: -1, dy: 0 },
+  { label: "Phải", icon: ArrowRight, dx: 1, dy: 0 },
+  { label: "Dưới trái", icon: ArrowDownLeft, dx: -1, dy: 1 },
+  { label: "Dưới", icon: ArrowDown, dx: 0, dy: 1 },
+  { label: "Dưới phải", icon: ArrowDownRight, dx: 1, dy: 1 },
+];
 
 const DEFAULT_FRUIT_INPUT = "mận, xoài, ổi, thanh long, dưa hấu, cam, bưởi";
 
@@ -53,9 +81,12 @@ export function PosterGenerator() {
   const [fruitInput, setFruitInput] = useState(DEFAULT_FRUIT_INPUT);
   const [poster, setPoster] = useState<PosterData | null>(() => buildPoster(DEFAULT_FRUIT_INPUT));
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [heroPosition, setHeroPosition] = useState(DEFAULT_HERO_POSITION);
+  const [isDragging, setIsDragging] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const posterRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const heroImgRef = useRef<HTMLDivElement>(null);
 
   const scales = poster ? getScales(poster.fruits.length) : null;
   const heroEmojis = poster ? [...new Set(poster.fruits.map((f) => f.emoji))].slice(0, 6) : [];
@@ -73,8 +104,48 @@ export function PosterGenerator() {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => setHeroImageUrl(e.target?.result as string);
+    reader.onload = (e) => {
+      setHeroImageUrl(e.target?.result as string);
+      setHeroPosition(DEFAULT_HERO_POSITION);
+    };
     reader.readAsDataURL(file);
+  }
+
+  function handleNudge(dx: number, dy: number) {
+    setHeroPosition((prev) => ({
+      x: clampPercent(prev.x + dx * NUDGE_STEP),
+      y: clampPercent(prev.y + dy * NUDGE_STEP),
+    }));
+  }
+
+  function handleHeroPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    const el = heroImgRef.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startPosition = heroPosition;
+    setIsDragging(true);
+
+    function handlePointerMove(moveEvent: PointerEvent) {
+      const dxPercent = ((moveEvent.clientX - startX) / width) * 100;
+      const dyPercent = ((moveEvent.clientY - startY) / height) * 100;
+      // Dragging right/down should reveal more of the image's left/top —
+      // i.e. move the focal point the opposite way from the pointer.
+      setHeroPosition({
+        x: clampPercent(startPosition.x - dxPercent),
+        y: clampPercent(startPosition.y - dyPercent),
+      });
+    }
+
+    function handlePointerUp() {
+      setIsDragging(false);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    }
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
   }
 
   async function handleDownload() {
@@ -181,10 +252,17 @@ export function PosterGenerator() {
             <div className={styles.rightCol}>
               <div className={styles.heroOval}>
                 {heroImageUrl ? (
-                  <div className={styles.heroImgWrap}>
-                    {/* eslint-disable-next-line @next/next/no-img-element -- ảnh do người dùng tải lên qua data URL, next/image không hỗ trợ tốt trường hợp này */}
-                    <img src={heroImageUrl} alt="" />
-                  </div>
+                  <div
+                    ref={heroImgRef}
+                    className={`${styles.heroImgWrap}${isDragging ? ` ${styles.isDragging}` : ""}`}
+                    style={{
+                      backgroundImage: `url(${heroImageUrl})`,
+                      backgroundPosition: `${heroPosition.x}% ${heroPosition.y}%`,
+                    }}
+                    onPointerDown={handleHeroPointerDown}
+                    aria-label={`Kéo để chỉnh vị trí ảnh — hiện tại ${Math.round(heroPosition.x)}%, ${Math.round(heroPosition.y)}%`}
+                    tabIndex={0}
+                  />
                 ) : (
                   <div className={styles.heroInner}>
                     {heroEmojis.map((emoji, idx) => (
@@ -197,6 +275,70 @@ export function PosterGenerator() {
               </div>
             </div>
           </div>
+
+          {heroImageUrl ? (
+            <div className={styles.positionControls}>
+              <div className={styles.nudgeGrid}>
+                {NUDGE_DIRECTIONS.slice(0, 3).map(({ label, icon: Icon, dx, dy }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    className={styles.nudgeBtn}
+                    onClick={() => handleNudge(dx, dy)}
+                    aria-label={label}
+                  >
+                    <Icon size={14} />
+                  </button>
+                ))}
+                {(() => {
+                  const left = NUDGE_DIRECTIONS[3];
+                  const right = NUDGE_DIRECTIONS[4];
+                  return (
+                    <>
+                      <button
+                        type="button"
+                        className={styles.nudgeBtn}
+                        onClick={() => handleNudge(left.dx, left.dy)}
+                        aria-label={left.label}
+                      >
+                        <ArrowLeft size={14} />
+                      </button>
+                      <span className={styles.nudgeCenter} aria-hidden="true" />
+                      <button
+                        type="button"
+                        className={styles.nudgeBtn}
+                        onClick={() => handleNudge(right.dx, right.dy)}
+                        aria-label={right.label}
+                      >
+                        <ArrowRight size={14} />
+                      </button>
+                    </>
+                  );
+                })()}
+                {NUDGE_DIRECTIONS.slice(5, 8).map(({ label, icon: Icon, dx, dy }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    className={styles.nudgeBtn}
+                    onClick={() => handleNudge(dx, dy)}
+                    aria-label={label}
+                  >
+                    <Icon size={14} />
+                  </button>
+                ))}
+              </div>
+              <div className={styles.positionSide}>
+                <p className={styles.positionHint}>Bấm mũi tên hoặc kéo trực tiếp trên ảnh để chỉnh vị trí hiển thị.</p>
+                <button
+                  type="button"
+                  className={styles.resetPositionBtn}
+                  onClick={() => setHeroPosition(DEFAULT_HERO_POSITION)}
+                >
+                  Đặt lại vị trí
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className={styles.actionRow}>
             <button type="button" className={styles.dlBtn} onClick={handleDownload} disabled={isDownloading}>
