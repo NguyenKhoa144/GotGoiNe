@@ -466,3 +466,43 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build. Đã xem `/login` qua preview local (localhost:3000), xác nhận màu nút "Đăng nhập" và các label giữ nguyên sắc thái xanh như trước khi gộp token.
+
+## 2026-07-23 - Fix góc phải poster tool bị vuông (không tròn theo card)
+
+### Cập nhật
+
+- Sửa `components/admin/poster-generator.module.css`: `.rightCol` (khối chứa `.heroOval`, phủ toàn bộ chiều cao bên phải poster) không tự có `border-radius`, chỉ trông cậy vào `border-radius: 18px` + `overflow: hidden` của `.poster` (phần tử cha) để được bo tròn theo đúng hình chữ nhật bo góc của card. Trên production thực tế, 2 góc phải (nơi `.heroOval` màu xanh nằm) hiển thị vuông cứng thay vì bo tròn khớp 2 góc trái — phát hiện qua ảnh chụp `/admin/poster` thật do người dùng gửi trực tiếp, không phải qua công cụ xem trước.
+- Thêm biến `--poster-radius: 18px` khai báo tại `.poster`, rồi cho `.rightCol` tự bo `border-top-right-radius`/`border-bottom-right-radius: var(--poster-radius)` — để nó tự cắt đúng hình theo `overflow: hidden` sẵn có của chính nó, không còn phụ thuộc hoàn toàn vào việc `.poster` có bo/cắt đúng con của nó ở 2 góc phải hay không.
+
+### Thuật ngữ
+
+- **Nested overflow:hidden clipping (cắt lồng nhau)**: khi 1 phần tử con có `position: absolute` + `overflow: hidden` + `z-index` riêng nằm bên trong 1 cha cũng có `border-radius` + `overflow: hidden`, phần tử con đó tạo ra ngữ cảnh render/compositing riêng — một số trình duyệt không luôn áp đúng phần bo góc của cha lên đúng biên của con trong ngữ cảnh đó, dù về lý thuyết CSS nó phải được cắt đúng. Cách phòng tránh chắc chắn nhất: bo góc trực tiếp trên chính phần tử con thay vì chỉ trông cậy vào cha.
+
+### Công dụng
+
+- Poster xuất ra (dùng để đăng Facebook/TikTok hằng ngày) giờ có 4 góc bo tròn đều, đúng như thiết kế ban đầu, không còn góc vuông lộ ra ở phía hình trái cây.
+
+### Lợi ích
+
+- Chỉ thêm 2 dòng CSS bo góc + 1 biến dùng chung, không đổi kích thước/vị trí/màu sắc gì khác trong poster.
+
+### Rủi ro
+
+- Chưa có ảnh "trước khi sửa" lưu lại để so trực tiếp (chỉ có mô tả bằng lời + ảnh người dùng gửi ngoài luồng chat lưu trữ) — nếu cần đối chiếu lại sau này, dựa vào chính ảnh đã gửi trong hội thoại lúc phát hiện lỗi.
+
+### Quản trị rủi ro
+
+- `npm run verify` pass sau khi sửa.
+- Đã mirror đúng thay đổi này vào bản demo tĩnh (ngoài repo, dùng để đối chiếu màu) để 2 nơi luôn khớp nhau nếu cần dùng lại sau này.
+
+### Hướng phát triển
+
+- Nếu sau này phát hiện thêm chỗ nào khác trong repo dùng pattern "cha bo góc + overflow:hidden, con absolute + overflow:hidden riêng" (hiện chưa rà hết toàn repo, chỉ mới xử lý đúng chỗ được báo), nên áp dụng luôn cách bo góc trực tiếp trên con để tránh lặp lại lỗi tương tự.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass lint, typecheck, build. Người dùng xác nhận lỗi qua ảnh chụp `/admin/poster` thật trên production trước khi sửa; chưa có xác nhận lại bằng ảnh sau khi sửa trong phiên làm việc này.
