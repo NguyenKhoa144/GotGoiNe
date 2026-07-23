@@ -91,7 +91,7 @@
   --poster-radius: 36px;
   width: 340px;
   height: 604px;
-  background: #eaf0e3;
+  background: #f4efe2;
   border-radius: var(--poster-radius);
   overflow: hidden;
   position: relative;
@@ -101,11 +101,11 @@
 }
 
 .leftCol {
-  width: 195px;
+  width: 165px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  padding: 18px 10px 10px 16px;
+  padding: 18px 8px 10px 14px;
   position: relative;
   z-index: 2;
 }
@@ -135,12 +135,13 @@
 
 .datePill {
   display: inline-block;
-  background: var(--accent);
-  color: #fff;
+  background: transparent;
+  border: 1.5px solid var(--green-dark);
+  color: var(--green-dark);
   font-size: 9px;
   font-weight: 700;
   border-radius: var(--r-pill);
-  padding: 2px 9px;
+  padding: 3px 12px;
   margin-top: 4px;
   letter-spacing: 0.2px;
 }
@@ -151,9 +152,11 @@
   font-size: 8px;
   font-weight: 600;
   border-radius: var(--r-pill);
-  padding: 3px 9px;
+  padding: 4px 11px;
   margin-top: 6px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   letter-spacing: 0.1px;
   line-height: 1.35;
 }
@@ -171,8 +174,8 @@
 .menuItem {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  border-bottom: 1px solid rgba(30, 92, 45, 0.08);
+  gap: 8px;
+  border-bottom: 1px dashed rgba(30, 92, 45, 0.22);
 }
 
 .menuItem:last-child {
@@ -180,7 +183,7 @@
 }
 
 .menuIcon {
-  background: linear-gradient(135deg, var(--green-mid), var(--green-dark));
+  background: #dce9cd;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -254,7 +257,7 @@
   position: absolute;
   right: 0;
   top: 0;
-  width: 145px;
+  width: 190px;
   height: 100%;
   display: flex;
   align-items: center;
@@ -272,12 +275,12 @@
 }
 
 .heroOval {
-  width: 190px;
+  width: 245px;
   height: 92%;
   background: linear-gradient(160deg, var(--green-mid) 0%, var(--green-dark) 60%, #163f20 100%);
   border-radius: 50% 0 0 50%;
   position: absolute;
-  right: -28px;
+  right: -35px;
   display: flex;
   align-items: center;
   justify-content: center;

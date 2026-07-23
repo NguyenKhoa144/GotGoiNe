@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Leaf } from "lucide-react";
 import { lookupFruit, type Fruit } from "@/data/poster";
 import styles from "./poster-generator.module.css";
 
@@ -29,12 +30,12 @@ function getScales(n: number) {
   const t = Math.min(Math.max((n - 3) / 9, 0), 1);
   const lerp = (a: number, b: number) => Math.round((a + (b - a) * t) * 10) / 10;
   return {
-    iconSize: Math.max(20, lerp(28, 20)),
+    iconSize: Math.max(28, lerp(40, 28)),
     fontSize: Math.max(7.5, lerp(11, 7.5)),
     descSize: Math.max(6, lerp(8, 6)),
     padding: Math.max(2.5, lerp(5, 2.5)),
     gap: Math.max(2, lerp(4, 2)),
-    heroSize: Math.max(22, lerp(30, 22)),
+    heroSize: Math.max(26, lerp(36, 26)),
   };
 }
 
@@ -130,7 +131,11 @@ export function PosterGenerator() {
                 <span className={styles.scriptLabel}>Thực đơn</span>
                 <div className={styles.todayTitle}>HÔM NAY</div>
                 <div className={styles.datePill}>{poster.date}</div>
-                <div className={styles.greenBanner}>🌿 Nhà gọt hôm nay có: 🌿</div>
+                <div className={styles.greenBanner}>
+                  <Leaf size={9} strokeWidth={2.5} />
+                  NHÀ GỌT CÓ:
+                  <Leaf size={9} strokeWidth={2.5} />
+                </div>
               </div>
 
               <div className={styles.menuSection} style={{ gap: `${scales.gap}px` }}>

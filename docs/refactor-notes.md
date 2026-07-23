@@ -560,3 +560,42 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build. Tự dựng route debug tạm (đã xoá trước khi commit) để xem trực tiếp bằng `zoom` CSS + screenshot, xác nhận góc bo tròn rõ hơn hẳn so với 18px cũ.
+
+## 2026-07-23 (tiếp) - Làm lại giao diện poster theo ảnh tham khảo người dùng gửi
+
+### Cập nhật
+
+- Người dùng gửi 1 ảnh poster tham khảo (nền kem, khối ảnh dome lớn bên phải ~55% bề rộng, pill ngày dạng viền thay vì nền đặc, badge trái cây tròn to nền xanh nhạt phẳng, đường kẻ đứt giữa các món) và muốn đổi toàn bộ giao diện poster theo hướng đó — không phải bug, là yêu cầu redesign thật.
+- Đã lập kế hoạch qua Plan Mode trước khi sửa (do phạm vi lớn hơn hẳn các lần chỉnh 1 dòng trước đó), giới hạn phạm vi rõ: **giữ nguyên icon emoji** (không tạo icon minh hoạ riêng như ảnh mẫu — cần asset mới, ngoài phạm vi), **giữ nguyên toàn bộ logic** (upload ảnh, xuất PNG, dữ liệu trái cây) — chỉ đổi CSS + 2 chỗ JSX nhỏ.
+- `components/admin/poster-generator.module.css`:
+  - `.poster` nền `#eaf0e3` (xanh nhạt) → `#f4efe2` (kem ấm).
+  - `.datePill` từ nền cam đặc → viền xanh đậm 1.5px, chữ xanh, nền trong suốt (dạng outline pill).
+  - `.greenBanner` đổi `display: inline-block` → `inline-flex` + `gap` để chứa 2 icon lá 2 bên text.
+  - `.menuIcon` nền gradient xanh đậm → nền phẳng xanh nhạt `#dce9cd`.
+  - `.menuItem` border-bottom từ `solid` → `dashed`.
+  - `.leftCol` hẹp lại (195px → 165px), `.rightCol` rộng ra (145px → 190px), `.heroOval` rộng ra (190px → 245px, right offset -28px → -35px) — để khối ảnh/màu bên phải chiếm tỉ lệ lớn hơn, giống ảnh mẫu.
+- `components/admin/poster-generator.tsx`:
+  - Đổi emoji 🌿 trong banner "Nhà gọt hôm nay có" thành icon `Leaf` từ `lucide-react` (thư viện đã có sẵn trong project, dùng ở `app/login/page.tsx` cho icon khoá/mắt) — 2 icon 2 bên chữ "NHÀ GỌT CÓ:" (rút gọn, viết hoa, bỏ "hôm nay" theo đúng ảnh mẫu).
+  - `getScales()`: tăng khoảng `iconSize` (20-28px → 28-40px) và `heroSize` (22-30px → 26-36px) để badge/emoji to hơn, khớp tỉ lệ mới.
+
+### Công dụng
+
+- Giao diện poster giờ gần với phong cách ảnh mẫu người dùng thích: ấm áp hơn (nền kem), khối ảnh nổi bật hơn, badge/pill nhẹ nhàng thoáng hơn — trong khi vẫn giữ nguyên toàn bộ chức năng cũ (nhập trái cây, upload ảnh hero, tải PNG).
+
+### Rủi ro
+
+- Không phục chế được đúng 100% icon minh hoạ trong ảnh mẫu (ảnh mẫu dùng icon vẽ tay/illustration riêng cho từng loại trái cây — vượt phạm vi, cần assets mới nếu muốn làm tiếp).
+- Đường cong khối ảnh bên phải là ước lượng bằng mắt (border-radius hình oval + overflow), không phải sao chép chính xác đường cong trong ảnh mẫu (không rõ ảnh mẫu dùng shape/SVG gì) — đã xem trực tiếp qua route debug tạm và thấy khá sát, nhưng chưa có xác nhận từ người dùng.
+
+### Quản trị rủi ro
+
+- Đã tự dựng route debug tạm (`app/dev-poster-preview`, không qua đăng nhập) để xem trực tiếp component thật, zoom bằng `el.style.zoom` + `scrollIntoView` (kỹ thuật đã dùng ổn ở các lần trước) — xác nhận cả phần trên (banner, badge, pill ngày) và phần dưới (góc bo, footer) đều hiển thị đúng ý đồ trước khi xoá route và commit.
+- Route debug + `.next` cache cũ đã xoá sạch trước khi build lại, tránh lặp lỗi type-validator đã gặp ở 2 lần sửa poster trước trong ngày.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass lint, typecheck, build. Đang chờ người dùng xác nhận qua ảnh chụp `/admin/poster` thật trước khi coi là xong.
