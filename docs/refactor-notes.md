@@ -506,3 +506,38 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build. Người dùng xác nhận lỗi qua ảnh chụp `/admin/poster` thật trên production trước khi sửa; chưa có xác nhận lại bằng ảnh sau khi sửa trong phiên làm việc này.
+
+## 2026-07-23 (tiếp) - Fix góc phải poster tool: thêm clip-path (nghi Safari không tôn trọng overflow:hidden + border-radius)
+
+### Cập nhật
+
+- Sau khi deploy fix `border-top-right-radius`/`border-bottom-right-radius` ở lần sửa trước, người dùng xác nhận qua ảnh chụp `/admin/poster` thật (đã hard refresh + tab ẩn danh) rằng góc phải **vẫn vuông**.
+- Kiểm chứng lại kỹ bằng cách tự dựng route tạm `app/dev-poster-preview` (không qua đăng nhập, không đụng tới `/admin/*`) để render thẳng `<PosterGenerator />`, đo bằng `getComputedStyle`/`getBoundingClientRect`/`document.elementFromPoint` — xác nhận trong Chromium (công cụ xem trước đang dùng), `border-top-right-radius: 18px` đã áp dụng đúng và điểm ở góc thực sự bị cắt (không render nội dung `.rightCol` ở đó). Tức là về mặt CSS, rule đã đúng và hoạt động đúng trong Chromium.
+- Vì người dùng thao tác trên Mac (nhiều khả năng trình duyệt mặc định là Safari) và bug vẫn còn sau khi code đã đúng trong Chromium, nghi vấn cao nhất là **Safari không tôn trọng `overflow: hidden` + `border-radius` khi clip 1 phần tử `position: absolute` có nền `linear-gradient` và ngữ cảnh compositing riêng** (`.heroOval` bên trong `.rightCol`) — đây là loại bug từng gặp ở WebKit, không phải lỗi logic CSS.
+- Thêm `clip-path: inset(0 round 0 var(--poster-radius) var(--poster-radius) 0);` vào `.rightCol` — 1 cơ chế cắt độc lập, không đi qua cùng pipeline với `overflow: hidden`, làm lá chắn dự phòng cho đúng trường hợp WebKit không cắt đúng.
+
+### Thuật ngữ
+
+- **`clip-path`**: thuộc tính CSS định nghĩa vùng hiển thị của phần tử bằng 1 hình dạng tường minh (ở đây là `inset()` — hình chữ nhật có thể bo góc riêng từng cạnh) — độc lập với `overflow`/`border-radius`, dùng 1 pipeline render khác trong trình duyệt.
+
+### Công dụng
+
+- Có thêm 1 lớp phòng vệ cho đúng trình duyệt (Safari) mà người dùng thực tế đang dùng để kiểm tra, thay vì chỉ dựa vào cơ chế `overflow:hidden` vốn đã xác nhận hoạt động đúng trong Chromium nhưng chưa chắc đúng ở WebKit.
+
+### Rủi ro
+
+- **Chưa xác nhận được bằng Safari thật** (không có sẵn môi trường Safari để tự kiểm chứng trong phiên làm việc này) — đây là suy luận có cơ sở (đo đạc kỹ trong Chromium loại trừ lỗi logic CSS, kết hợp với thiết bị người dùng đang dùng) chứ chưa phải bằng chứng trực tiếp. Nếu `clip-path` vẫn không giải quyết được, cần hỏi người dùng xem thử bằng Chrome trên cùng máy để xác định chắc chắn đây có phải lỗi riêng của Safari hay không.
+
+### Quản trị rủi ro
+
+- `npm run verify` pass sau khi sửa (đã xoá `.next` cache cũ do route debug tạm để lại trước khi build lại cho sạch).
+- Route debug tạm (`app/dev-poster-preview`) đã xoá hoàn toàn trước khi commit, không lọt vào git.
+- Đã mirror `clip-path` vào bản demo tĩnh ngoài repo cho khớp.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass lint, typecheck, build. Chờ người dùng xác nhận lại trên Safari thật sau khi deploy.

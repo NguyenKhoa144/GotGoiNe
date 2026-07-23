@@ -263,6 +263,11 @@
   overflow: hidden;
   border-top-right-radius: var(--poster-radius);
   border-bottom-right-radius: var(--poster-radius);
+  /* Safari has been observed not honoring border-radius + overflow:hidden
+     clipping here (gradient-background child inside an absolutely
+     positioned, own-stacking-context box) — clip-path is a second,
+     independent clip that doesn't rely on the same code path. */
+  clip-path: inset(0 round 0 var(--poster-radius) var(--poster-radius) 0);
   pointer-events: none;
 }
 
