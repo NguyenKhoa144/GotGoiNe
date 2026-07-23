@@ -716,3 +716,25 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build. Đã xem qua route debug tạm ở cả 2 trạng thái (có ảnh/chưa có ảnh) và test kéo thả vẫn hoạt động.
+
+## 2026-07-23 (tiếp) - Thêm hiệu ứng làm mờ (blur) thật ở mép nối, không chỉ phủ màu
+
+### Cập nhật
+
+- Sau khi tinh chỉnh lại độ đậm/độ rộng của lớp phủ màu kem (`.heroFade`) mà đường ranh giới vẫn còn rõ theo phản hồi người dùng, nhận ra vấn đề gốc: **phủ 1 lớp màu bán trong suốt lên trên ảnh KHÔNG xoá được ranh giới hình học** — ranh giới thật (nơi div ảnh bắt đầu/kết thúc) vẫn còn nguyên, nhất là với ảnh trái cây thật nhiều màu sắc/tương phản cao (không giống ảnh gradient mượt dùng test lúc đầu) — lớp phủ chỉ làm nhạt màu đi chứ không làm mất đường viền sắc nét.
+- Giải pháp thật: thêm 1 lớp `<div>` thứ 2 (`.heroBlurLayer`) — bản sao chính xác của ảnh hero (cùng `backgroundImage`/`backgroundPosition`/`backgroundSize`), áp `filter: blur(14px)` để làm mờ thật, rồi dùng `mask-image: linear-gradient(...)` để lớp mờ này chỉ hiện rõ ở đúng mép trái (0-26%) rồi tự mờ dần biến mất, hoà vào bản ảnh sắc nét gốc bên dưới — tạo hiệu ứng "feather" (mép lông vũ) đúng nghĩa, kiểu Photoshop, thay vì chỉ tô màu lên trên.
+- Giữ lại `.heroFade` (lớp phủ màu kem) với độ đậm/rộng đã tinh chỉnh, xếp trên cùng `.heroBlurLayer`, để tạo thêm chút gần màu với nền card — 2 lớp cộng hưởng nhau.
+
+### Rủi ro kỹ thuật đã lo và đã xác minh
+
+- `filter: blur()` + `mask-image` là loại hiệu ứng CSS mà `html2canvas` có tiếng là hỗ trợ kém/không đầy đủ (giống bug `object-fit` đã gặp trước đó trong ngày) — nếu không kiểm tra kỹ, rất có thể chỉ đẹp trên preview nhưng file PNG xuất ra lại mất hiệu ứng, quay về đường viền cứng.
+- Đã kiểm chứng trực tiếp: gọi luồng xuất PNG thật, hiển thị file xuất ra ngay trên trang để so sánh bằng mắt — **xác nhận hiệu ứng mờ + mask giữ nguyên đúng trong file xuất ra**, không bị mất.
+- Test bằng ảnh giả lập nhiều màu/tương phản cao (mô phỏng ảnh trái cây thật) thay vì ảnh gradient mượt như lần test trước — để đánh giá đúng hơn hiệu ứng có thực sự "giấu" được ranh giới hay không trên nội dung phức tạp.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass lint, typecheck, build.

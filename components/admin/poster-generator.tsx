@@ -248,18 +248,29 @@ export function PosterGenerator() {
             <div className={styles.rightCol}>
               <div className={styles.heroOval}>
                 {heroImageUrl ? (
-                  <div
-                    ref={heroImgRef}
-                    className={`${styles.heroImgWrap}${isDragging ? ` ${styles.isDragging}` : ""}`}
-                    style={{
-                      backgroundImage: `url(${heroImageUrl})`,
-                      backgroundPosition: `${heroPosition.x}% ${heroPosition.y}%`,
-                      backgroundSize: heroBackgroundSize,
-                    }}
-                    onPointerDown={handleHeroPointerDown}
-                    aria-label={`Kéo để chỉnh vị trí ảnh — hiện tại ${Math.round(heroPosition.x)}%, ${Math.round(heroPosition.y)}%`}
-                    tabIndex={0}
-                  />
+                  <>
+                    <div
+                      ref={heroImgRef}
+                      className={`${styles.heroImgWrap}${isDragging ? ` ${styles.isDragging}` : ""}`}
+                      style={{
+                        backgroundImage: `url(${heroImageUrl})`,
+                        backgroundPosition: `${heroPosition.x}% ${heroPosition.y}%`,
+                        backgroundSize: heroBackgroundSize,
+                      }}
+                      onPointerDown={handleHeroPointerDown}
+                      aria-label={`Kéo để chỉnh vị trí ảnh — hiện tại ${Math.round(heroPosition.x)}%, ${Math.round(heroPosition.y)}%`}
+                      tabIndex={0}
+                    />
+                    <div
+                      className={styles.heroBlurLayer}
+                      style={{
+                        backgroundImage: `url(${heroImageUrl})`,
+                        backgroundPosition: `${heroPosition.x}% ${heroPosition.y}%`,
+                        backgroundSize: heroBackgroundSize,
+                      }}
+                      aria-hidden="true"
+                    />
+                  </>
                 ) : (
                   <div className={styles.heroInner}>
                     {heroEmojis.map((emoji, idx) => (

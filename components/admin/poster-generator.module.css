@@ -290,9 +290,10 @@
   inset: 0;
   background: linear-gradient(
     to right,
-    rgba(244, 239, 226, 0.4) 0%,
-    rgba(244, 239, 226, 0.15) 6%,
-    rgba(244, 239, 226, 0) 14%
+    rgba(244, 239, 226, 0.5) 0%,
+    rgba(244, 239, 226, 0.32) 10%,
+    rgba(244, 239, 226, 0.14) 20%,
+    rgba(244, 239, 226, 0) 34%
   );
   pointer-events: none;
   z-index: 2;
@@ -324,6 +325,17 @@
 
 .heroImgWrap.isDragging {
   cursor: grabbing;
+}
+
+.heroBlurLayer {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  filter: blur(14px);
+  -webkit-mask-image: linear-gradient(to right, black 0%, black 6%, transparent 26%);
+  mask-image: linear-gradient(to right, black 0%, black 6%, transparent 26%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .bgCircle1 {
