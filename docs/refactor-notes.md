@@ -700,3 +700,19 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build.
+
+## 2026-07-23 (tiếp) - Làm mờ đường phân tách giữa nền và khối ảnh hero
+
+### Cập nhật
+
+- Thêm 1 lớp gradient mờ dần (`.heroFade`) phủ lên khoảng 38% bên trái của `.heroOval` — từ màu kem đặc của card (`#f4efe2`, khớp đúng màu nền `.poster`) mờ dần về trong suốt, tạo cảm giác 2 nửa "chảy" vào nhau thay vì cắt đôi bằng đường thẳng cứng.
+- Áp dụng cho cả 2 trạng thái: khi chưa có ảnh (che lên nền gradient xanh mặc định) và khi đã upload ảnh thật (che lên `.heroImgWrap`).
+- `pointer-events: none` trên lớp phủ để không chặn kéo thả — đã test lại, kéo ảnh vẫn hoạt động bình thường qua lớp này.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Kết quả: pass lint, typecheck, build. Đã xem qua route debug tạm ở cả 2 trạng thái (có ảnh/chưa có ảnh) và test kéo thả vẫn hoạt động.

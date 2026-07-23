@@ -269,6 +269,7 @@ export function PosterGenerator() {
                     ))}
                   </div>
                 )}
+                <div className={styles.heroFade} aria-hidden="true" />
               </div>
             </div>
           </div>
