@@ -5,20 +5,22 @@ export type FruitInfo = {
 
 export type Fruit = FruitInfo & {
   name: string;
+  matchType: "exact" | "guess" | "unknown";
+  matchedKey?: string;
 };
 
 const FRUIT_DB: Record<string, FruitInfo> = {
   "kiwi": { emoji: "🥝", desc: "Giàu vitamin C, tốt cho hệ miễn dịch" },
   "xoài": { emoji: "🥭", desc: "Ngọt mát, giàu vitamin A và C" },
   "mận": { emoji: "🍑", desc: "Thanh nhiệt, hỗ trợ tiêu hóa" },
-  "ổi": { emoji: "🍎", desc: "Giàu vitamin C, tốt cho làn da" },
-  "ổi ruby": { emoji: "🍎", desc: "Giàu vitamin C, tốt cho làn da" },
+  "ổi": { emoji: "🍏", desc: "Giàu vitamin C, tốt cho làn da" },
+  "ổi ruby": { emoji: "🍏", desc: "Giàu vitamin C, tốt cho làn da" },
   "thanh long": { emoji: "🌵", desc: "Giàu chất xơ, tốt cho đường ruột" },
   "dưa hấu": { emoji: "🍉", desc: "Mát lạnh, giải nhiệt ngày hè" },
   "dưa lưới": { emoji: "🍈", desc: "Ngọt mát, thơm dịu" },
   "cam": { emoji: "🍊", desc: "Bổ sung vitamin C, tăng đề kháng" },
-  "bưởi": { emoji: "🍊", desc: "Ít calo, hỗ trợ giảm cân" },
-  "bưởi hồng": { emoji: "🍊", desc: "Ít calo, hỗ trợ giảm cân" },
+  "bưởi": { emoji: "🟡", desc: "Ít calo, hỗ trợ giảm cân" },
+  "bưởi hồng": { emoji: "🟡", desc: "Ít calo, hỗ trợ giảm cân" },
   "nho": { emoji: "🍇", desc: "Chống oxy hóa, tốt cho tim mạch" },
   "dâu tây": { emoji: "🍓", desc: "Giàu antioxidant, làm đẹp da" },
   "cherry": { emoji: "🍒", desc: "Giòn ngọt, giàu dinh dưỡng" },
@@ -37,8 +39,8 @@ const FRUIT_DB: Record<string, FruitInfo> = {
   "củ sắn": { emoji: "🤍", desc: "Bổ sung tinh bột, năng lượng lành mạnh" },
   "sắn": { emoji: "🤍", desc: "Bổ sung tinh bột, năng lượng lành mạnh" },
   "bơ": { emoji: "🥑", desc: "Giàu chất béo lành mạnh, tốt cho da" },
-  "nhãn": { emoji: "🍇", desc: "Ngọt mát, bổ máu tăng năng lượng" },
-  "vải": { emoji: "🔴", desc: "Ngọt thơm, giàu vitamin C" },
+  "nhãn": { emoji: "⚪", desc: "Ngọt mát, bổ máu tăng năng lượng" },
+  "vải": { emoji: "🩷", desc: "Ngọt thơm, giàu vitamin C" },
   "táo": { emoji: "🍎", desc: "Giàu chất xơ, hỗ trợ tiêu hóa" },
   "táo bom": { emoji: "🍎", desc: "Giàu chất xơ, hỗ trợ tiêu hóa" },
 };
@@ -47,11 +49,11 @@ const FALLBACK: FruitInfo = { emoji: "🍀", desc: "Tươi ngon, giàu dưỡng 
 
 export function lookupFruit(name: string): Fruit {
   const key = name.trim().toLowerCase();
-  if (FRUIT_DB[key]) return { name, ...FRUIT_DB[key] };
+  if (FRUIT_DB[key]) return { name, ...FRUIT_DB[key], matchType: "exact" };
 
   for (const [k, v] of Object.entries(FRUIT_DB)) {
-    if (key.includes(k) || k.includes(key)) return { name, ...v };
+    if (key.includes(k) || k.includes(key)) return { name, ...v, matchType: "guess", matchedKey: k };
   }
 
-  return { name, ...FALLBACK };
+  return { name, ...FALLBACK, matchType: "unknown" };
 }

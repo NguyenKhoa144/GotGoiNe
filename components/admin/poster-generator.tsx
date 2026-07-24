@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Leaf } from "lucide-react";
 import { lookupFruit, type Fruit } from "@/data/poster";
 import styles from "./poster-generator.module.css";
@@ -29,6 +29,7 @@ const DAY_NAMES = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ 
 type PosterData = {
   fruits: Fruit[];
   date: string;
+  warnings: string[];
 };
 
 function formatDate() {
@@ -58,7 +59,22 @@ function buildPoster(raw: string): PosterData | null {
     .filter(Boolean)
     .map(lookupFruit);
   if (fruits.length === 0) return null;
-  return { fruits, date: formatDate() };
+
+  const warnings: string[] = [];
+  fruits
+    .filter((f) => f.matchType === "guess")
+    .forEach((f) => {
+      warnings.push(
+        `"${f.name}" chưa có trong danh sách, đang tạm dùng icon/mô tả của "${f.matchedKey}" — kiểm tra lại trước khi đăng.`
+      );
+    });
+  fruits
+    .filter((f) => f.matchType === "unknown")
+    .forEach((f) => {
+      warnings.push(`"${f.name}" chưa có dữ liệu, đang dùng icon/mô tả mặc định.`);
+    });
+
+  return { fruits, date: formatDate(), warnings };
 }
 
 export function PosterGenerator() {
@@ -73,9 +89,28 @@ export function PosterGenerator() {
   const posterRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const heroImgRef = useRef<HTMLDivElement>(null);
+  const menuSectionRef = useRef<HTMLDivElement>(null);
+  const [menuOverflow, setMenuOverflow] = useState(false);
 
   const scales = poster ? getScales(poster.fruits.length) : null;
   const heroEmojis = poster ? [...new Set(poster.fruits.map((f) => f.emoji))].slice(0, 6) : [];
+  const warnings = poster
+    ? [
+        ...poster.warnings,
+        ...(menuOverflow
+          ? ["Danh sách quá dài, một số mục có thể bị cắt trong ảnh xuất — hãy bớt loại trái cây hoặc rút gọn danh sách."]
+          : []),
+      ]
+    : [];
+
+  useEffect(() => {
+    const el = menuSectionRef.current;
+    if (!el) {
+      setMenuOverflow(false);
+      return;
+    }
+    setMenuOverflow(el.scrollHeight > el.clientHeight + 1);
+  }, [poster]);
 
   function handleGenerate() {
     const next = buildPoster(fruitInput);
@@ -189,6 +224,13 @@ export function PosterGenerator() {
 
       {poster && scales ? (
         <div className={styles.posterWrap}>
+          {warnings.length > 0 ? (
+            <div className={styles.toolWarning}>
+              {warnings.map((message, idx) => (
+                <div key={idx}>⚠️ {message}</div>
+              ))}
+            </div>
+          ) : null}
           <div ref={posterRef} className={styles.poster}>
             <div className={styles.bgCircle1} />
             <div className={styles.bgCircle2} />
@@ -205,7 +247,7 @@ export function PosterGenerator() {
                 </div>
               </div>
 
-              <div className={styles.menuSection} style={{ gap: `${scales.gap}px` }}>
+              <div ref={menuSectionRef} className={styles.menuSection} style={{ gap: `${scales.gap}px` }}>
                 {poster.fruits.map((fruit, idx) => (
                   <div
                     key={`${fruit.name}-${idx}`}
