@@ -71,6 +71,12 @@ export default async function AdminHomePage() {
           <div className="text-xs text-neutral-500">Tồn kho và ghi nhận hàng hư hỏng</div>
         </Link>
 
+        <Link href="/admin/stats" className={card}>
+          <div className="mb-1 text-2xl">📊</div>
+          <div className="text-sm font-bold text-[#152b1a]">Thống kê</div>
+          <div className="text-xs text-neutral-500">Lượng bán, hao hụt và tỷ lệ theo tháng</div>
+        </Link>
+
         <Link href="/admin/poster" className={card}>
           <div className="mb-1 text-2xl">🖼️</div>
           <div className="text-sm font-bold text-[#152b1a]">Tạo Poster</div>
