@@ -32,9 +32,6 @@ model Product {
   description String?
   available   Boolean  @default(true)
   sortOrder   Int      @default(0)
-  // Đơn vị gốc của sản phẩm: "kg" quy đổi ra gram khi vào thực đơn ngày,
-  // "quả"/"hộp" giữ nguyên số nguyên đơn vị.
-  unit        String   @default("kg")
   // Ảnh thật thay cho emoji — thêm sẵn cột để sau này bật upload không phải
   // migrate lại; hiện chưa dùng, giao diện vẫn hiển thị emoji.
   imageUrl    String?

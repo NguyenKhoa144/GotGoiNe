@@ -40,7 +40,7 @@ async function main() {
         productId: product.id,
         date,
         priceToday: parseVnd(product.price),
-        qtyGrams: product.unit === "kg" ? 1000 : 10,
+        qtyGrams: 1000,
         sortOrder: product.sortOrder,
       },
     });
