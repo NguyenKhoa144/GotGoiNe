@@ -738,3 +738,208 @@ npm run verify
 ```
 
 Kết quả: pass lint, typecheck, build.
+
+## 2026-08-21 - SEO cơ bản: sitemap, robots.txt, dữ liệu có cấu trúc
+
+### Cập nhật
+
+- Thêm `app/sitemap.ts` và `app/robots.ts` — Next.js 16 tự sinh `/sitemap.xml` và `/robots.txt` từ file TypeScript, không phải viết XML tay.
+- `robots.txt` chặn `/admin`, `/login`, `/api` để các trang quản trị không lọt vào kết quả tìm kiếm.
+- Thêm JSON-LD kiểu `LocalBusiness` vào `app/layout.tsx`: địa chỉ Đường 30/4 (Phú Lợi), giờ mở cửa 10:00-20:00 mọi ngày.
+
+### Thuật ngữ
+
+- **SEO**: tối ưu để máy tìm kiếm hiểu đúng nội dung trang và xếp hạng cao hơn với từ khoá liên quan.
+- **Sitemap**: bản đồ liệt kê URL của site, giúp Google dò trang đầy đủ, không bỏ sót.
+- **JSON-LD / dữ liệu có cấu trúc**: đoạn dữ liệu máy đọc được mô tả cơ sở kinh doanh, là điều kiện để Google hiển thị thẻ thông tin (rich snippet) thay vì chỉ dòng link xanh.
+
+### Rủi ro
+
+- Thông tin trong JSON-LD sai thì Google hiển thị sai — đã hỏi và lấy đúng thông tin thật từ chủ quán trước khi điền.
+- Chưa có số điện thoại nên **cố ý không khai trường `telephone`** thay vì để chuỗi rỗng — khai trường rỗng còn tệ hơn không khai.
+
+### Hướng phát triển
+
+- Điền `telephone` khi có số chính thức.
+- Cụm "Đặt trước 30-60 phút" hiện nằm trong phần mô tả vì schema.org không có trường chuẩn cho thời gian đặt trước.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Pass lint, typecheck, build. Đã mở trực tiếp `/robots.txt`, `/sitemap.xml` và đọc thẻ JSON-LD trong DOM trên cả localhost lẫn bản production.
+
+## 2026-08-21 (tiếp) - Đưa sản phẩm từ file tĩnh vào cơ sở dữ liệu
+
+### Cập nhật
+
+- Thêm model `Product` vào `prisma/schema.prisma`, seed 8 sản phẩm đang có từ `data/home.ts` (`prisma/seed.mjs`).
+- `app/page.tsx` chuyển từ Client Component sang Server Component, đọc sản phẩm qua `lib/products.ts`; toàn bộ phần tương tác (lọc danh mục, hiệu ứng thêm giỏ) tách sang `components/home/home-content.tsx`.
+- Thêm trang quản trị `/admin/products` với Server Actions thêm/sửa/xoá, và `app/admin/layout.tsx` làm thanh điều hướng dùng chung.
+- `/admin` từ chỗ chuyển hướng thẳng sang `/admin/poster` trở thành trang tổng quan thật; đăng nhập trực tiếp (không qua `callbackUrl`) giờ vào `/admin` thay vì lạc về trang chủ.
+
+### Rủi ro
+
+- **Trang chủ bị Next.js dựng sẵn thành tĩnh** (`○ Static` trong bảng route sau khi build) — nghĩa là admin sửa dữ liệu xong trang live vẫn giữ nội dung cũ cho tới lần deploy kế. Phát hiện nhờ đọc bảng route sau `npm run verify` chứ không phải qua thử nghiệm.
+- Nút "thêm vào giỏ" ở khối hero trước đây tra tên sản phẩm bằng `id === "p4"`; id giờ do cơ sở dữ liệu sinh (cuid) nên phép so sánh này chết âm thầm — đã đổi sang lấy tên từ chính chuỗi hiển thị của hero.
+
+### Quản trị rủi ro
+
+- Đặt `export const dynamic = "force-dynamic"` cho các trang đọc dữ liệu sống, kiểm chứng lại bằng bảng route (`ƒ Dynamic`).
+- Danh mục trong form quản trị là danh sách cố định lấy từ `PRODUCT_CATEGORIES` (chính là `data/home.ts`), không cho gõ tay — gõ sai một ký tự là sản phẩm biến mất khỏi mọi tab lọc ở trang chủ.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Pass. Đã thử trên preview: lọc danh mục ra đúng dữ liệu từ cơ sở dữ liệu, đổi sang tiếng Anh vẫn dùng đúng bản tĩnh, không lỗi console.
+
+## 2026-08-21 (tiếp) - Thực đơn theo ngày, tủ lạnh và chốt ngày tự động
+
+### Cập nhật
+
+- Thêm `DailyMenuEntry` (mỗi ngày một bộ dòng riêng, khoá duy nhất `[productId, date]`) và `InventoryLoss` (nhật ký hao hụt bắt buộc có lý do).
+- Trang chủ đọc theo **thực đơn hôm nay**, bỏ loại đã bán hết; sản phẩm nằm trong danh sách nhưng chưa đưa vào thực đơn thì khách không thấy.
+- `/admin/products` dựng lại thành 2 cột: danh sách trái cây bên trái (tìm kiếm, nút thêm vào thực đơn, modal tạo nhanh) và thực đơn hôm nay bên phải (đổi thứ tự, giá, nhập, đã bán, còn lại).
+- Thêm tab **Tủ lạnh** (`/admin/fridge`): tồn kho hôm nay, form ghi nhận hư hỏng, nhật ký 7 ngày.
+- Chốt ngày qua `app/api/cron/close-day/route.ts` + `vercel.json`, kèm nút bấm tay và dải cảnh báo khi cron lỡ.
+
+### Thuật ngữ
+
+- **Chốt ngày**: không phải xoá thực đơn. Còn lại = nhập − đã bán − hư hỏng; còn > 0 thì loại đó sang thực đơn hôm sau với đúng phần còn lại, còn ≤ 0 thì rời thực đơn. Dòng của ngày cũ giữ nguyên làm lịch sử.
+- **Idempotent**: chạy lại nhiều lần cho ra cùng một kết quả, không cộng dồn.
+
+### Rủi ro
+
+- **Múi giờ.** Vercel chạy UTC, quán chạy giờ Việt Nam (UTC+7). Dùng thẳng `new Date()` thì từ 17h chiều giờ Việt Nam máy chủ đã sang ngày mới trong khi quán còn đang bán — thực đơn lệch một ngày một cách âm thầm, rất khó phát hiện về sau.
+- Cron chết mà không ai biết thì sáng hôm sau thực đơn trống và trang chủ trắng sản phẩm.
+- Trừ kho và ghi nhật ký hao hụt mà tách rời nhau thì một lần lỗi giữa chừng sẽ để lại kho bị trừ nhưng không có dòng nào giải thích.
+
+### Quản trị rủi ro
+
+- Gom mọi khái niệm "hôm nay" vào `lib/date-vn.ts`, cron đặt `0 17 * * *` (17:00 UTC = 00:00 giờ Việt Nam).
+- Nhờ khoá duy nhất `[productId, date]`, chạy cron hai lần chỉ ghi đè đúng một dòng — đã kiểm chứng bằng cách gọi endpoint lần thứ hai.
+- `getPendingCarryDate()` phát hiện tình trạng chưa chốt và hiện dải cảnh báo vàng kèm nút bấm tay, để admin thấy trước khi khách thấy.
+- `reportSpoilage` gói cả hai thao tác vào một `$transaction`.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Pass. Dựng kịch bản 3 loại rồi gọi thật endpoint chốt ngày:
+
+- nhập 1000g, bán 300g → chuyển sang hôm nay đúng 700g, đã bán/hư hỏng về 0;
+- bán hết → rời thực đơn;
+- hỏng hết phần còn lại → rời thực đơn;
+- gọi lại lần hai → vẫn một dòng, không nhân đôi;
+- thiếu hoặc sai `CRON_SECRET` → HTTP 401.
+
+Dữ liệu thử đã dọn sạch khỏi cơ sở dữ liệu sau khi kiểm chứng.
+
+## 2026-08-21 (tiếp) - Sửa sai thiết kế: định lượng luôn tính bằng gram
+
+### Cập nhật
+
+- Gỡ hoàn toàn khái niệm "đơn vị bán" (kg/hộp/ly/set) khỏi phần định lượng. Mọi ô nhập và hiển thị đều là gram.
+- Bỏ ô chọn đơn vị khỏi form thêm/sửa sản phẩm; `lib/qty.ts` rút gọn còn `DEFAULT_QTY_GRAMS` và `formatGrams`.
+
+### Vì sao phải sửa
+
+- Bản thiết kế bàn giao mô tả hàng cân (ổi, xoài nguyên trái) nên đặt ra khái niệm đơn vị. Áp nguyên si vào đây là sai: trái cây nhập về **luôn** là hàng cân, bán ra dưới dạng hộp hay ly chỉ là chuyện đóng gói. Kết quả là giao diện hiện những dòng vô nghĩa như "Hộp quà trái cây mini: nhập 1000g", rồi sau khi sửa nửa vời thành "10 set" thì vẫn sai bản chất.
+- **Bài học**: bản thiết kế bàn giao mô tả một hoàn cảnh cụ thể; trước khi bê nguyên một khái niệm trong đó vào, phải kiểm tra xem hoàn cảnh ấy có đúng với dữ liệu thật của dự án không. Catalog lúc đó toàn hàng đóng sẵn — đọc qua dữ liệu là thấy ngay.
+
+### Rủi ro
+
+- Khi mỗi loại một đơn vị, các thẻ chỉ số cộng gộp số lượng cho ra con số vô nghĩa ("500g xoài + 2 hộp quà = 502"). Lỗi này lọt qua hai lần rà soát vì chỉ nhìn từng dòng chứ không nhìn phần tổng hợp.
+
+### Quản trị rủi ro
+
+- Sau khi thống nhất một đơn vị, các số tổng hợp lại cộng được. Tủ lạnh hiện hao hụt theo gram kèm **tỷ lệ trên tổng bày bán** — 500g hỏng trên 1kg khác hẳn 500g hỏng trên 20kg, chỉ con số tuyệt đối thì không nói lên điều gì.
+- Bỏ mục "doanh thu tạm tính": lượng bán tính bằng gram còn giá là giá một phần bán cho khách, nhân hai thứ đó ra số sai. Thà không hiện còn hơn hiện số sai.
+- Cột `Product.unit` tạm giữ lại trong cơ sở dữ liệu (không còn dùng ở đâu) để tránh migration phá bản đang chạy.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Pass. Đưa dữ liệu 4 dòng thực đơn về 1000g và xem lại trên preview.
+
+## 2026-08-21 (tiếp) - Nối phần "Tự tay ghép hộp" vào thực đơn
+
+### Cập nhật
+
+- `data/fruit-box.ts` thêm `fruitBoxItemsFromProducts()`; `FruitBoxSection` nhận danh sách qua props thay vì tự đọc file tĩnh.
+- Thêm trạng thái rỗng khi hôm nay chưa có gì để ghép.
+
+### Vì sao
+
+- Mục này vẫn cho khách chọn từ 8 loại viết cứng trong code (Kiwi, Dâu tây, Nho...) không liên quan gì tới thực đơn hay tồn kho — khách ghép được hộp bằng những loại quán không hề có, và admin không có cách nào sửa. Đây là phần sót lại khi chuyển trang chủ sang đọc cơ sở dữ liệu: chỉ nhìn khu sản phẩm mà quên rằng trang chủ còn một chỗ khác cũng liệt kê trái cây.
+
+### Rủi ro
+
+- Tên hiển thị giờ là tên sản phẩm đầy đủ ("Xoài cát Hòa Lộc" thay vì "Xoài"), dài hơn trong ô vuông nhỏ. Đã hỏi và chủ quán chọn giữ tên đầy đủ.
+- `pricePerPart` và `fee` khai báo trong `data/fruit-box.ts` nhưng không được dùng ở đâu trong giao diện — nút "Đặt hộp này" mới chỉ bật thông báo "sắp ra mắt". Phần giá của tính năng này vẫn bỏ ngỏ.
+
+### Quản trị rủi ro
+
+- Màu nền từng loại chọn theo id sản phẩm, để một loại luôn giữ đúng một màu dù thứ tự thực đơn thay đổi.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Pass. Đã đối chiếu trên preview: phần ghép hộp hiện đúng các loại đang có trong thực đơn hôm nay.
+
+## 2026-08-21 (tiếp) - Tab thống kê theo tháng và dọn code chết
+
+### Cập nhật
+
+- Thêm `lib/stats.ts` và `/admin/stats`: lượng bán, tổng bày bán, hao hụt, tỷ lệ hao hụt, tỷ lệ bán được, biểu đồ cột theo tuần (CSS thuần), xếp hạng bán chạy, hao hụt tách theo lý do. Ô chọn tháng lọc thật qua query `?thang=YYYY-MM`.
+- Xoá mảng `products` tiếng Việt trong `data/home.ts` (đã thành code chết vì trang chủ đọc từ cơ sở dữ liệu); tách danh sách tiếng Anh thành `EN_PRODUCTS` riêng và bỏ `products` khỏi kiểu `HomeContent`.
+
+### Vì sao không làm giao diện tĩnh như bản bàn giao đề xuất
+
+- Bản bàn giao cho rằng phải có bảng đơn hàng mới tính được số thật. Nhận định đó không còn đúng sau khi mỗi ngày đều lưu lượng bán và hao hụt — dữ liệu đã đủ, dựng số giả sẽ lãng phí và gây hiểu nhầm.
+
+### Rủi ro
+
+- Hàng tồn được chuyển tiếp sang hôm sau, nên cùng một lượng trái cây được tính vào "tổng bày bán" của nhiều ngày. Các tỷ lệ vì thế là so với lượng bày bán mỗi ngày, **không phải** lượng nhập mới trong tháng — đã ghi chú thẳng dưới trang để không ai đọc nhầm thành báo cáo nhập hàng.
+- Bản tiếng Anh của trang chủ vẫn dùng danh sách tĩnh, không theo tồn kho thật. Chấp nhận theo phạm vi đã thống nhất (chỉ quản lý bản tiếng Việt), nhưng sẽ thành vấn đề nếu có khách nước ngoài thật.
+
+### Hướng phát triển
+
+- Muốn có doanh thu thì phải chốt giá theo kg trước, khi đó giá hiển thị cho khách trên trang chủ cũng thành giá/kg.
+- Bản tiếng Anh nên đọc từ cơ sở dữ liệu nếu tính năng song ngữ được dùng thật.
+
+### Kiểm chứng
+
+```bash
+npm run verify
+```
+
+Pass. Kiểm chứng phần rủi ro nhất là truy vấn theo mốc ngày UTC: khoảng 01/08-01/09 lấy đúng các dòng của ngày 21/08, và ngày 21 rơi đúng vào cột T3 (15-21). Đã đối chiếu cả hai ngôn ngữ trên preview sau khi dọn `data/home.ts`.
+
+## 2026-08-21 (tiếp) - Ghi chú kỹ thuật gặp trong ngày
+
+Những chỗ mất thời gian, ghi lại để lần sau không vấp lại:
+
+- **Next.js 16 giữ typegen cũ.** Xoá một trang (`app/admin/products/new/page.tsx`) rồi chạy typecheck vẫn báo `Cannot find module '../../app/admin/products/new/page.js'` — do `.next/types/validator.ts` còn tham chiếu trang đã xoá. Xoá `.next` và `tsconfig.tsbuildinfo` rồi build lại. Lưu ý xoá `.next` khi dev server còn chạy sẽ làm hỏng cache Turbopack (log đầy `Compaction failed`), phải tắt server trước.
+- **File `"use server"` chỉ được export async function.** Khai một hằng số trong đó là lỗi build. Tách sang file `constants.ts` riêng — dự án đã có tiền lệ ở `app/register/constants.ts`.
+- **Quy tắc lint chặn `setState` trong `useEffect`.** Thay vì đồng bộ state theo props bằng effect, đặt `key` của component gộp cả số liệu máy chủ — dữ liệu đổi thì component tự dựng lại và ô nhập lấy giá trị mới. Không cần effect, không có render dây chuyền.
+- **Không truyền hàm từ Server Component sang Client Component.** Props phải chuyển được thành dữ liệu thuần. Tính sẵn nhãn ở phía máy chủ rồi truyền mảng dữ liệu.
+- **Prisma CLI không đọc `.env.local`.** Dùng `set -a && source .env.local && set +a && npx prisma ...` — đã ghi ở mục trước, nhắc lại vì vẫn dễ quên.
+
+### Việc còn treo
+
+- **Chưa đặt `CRON_SECRET` trên Vercel** — endpoint chốt ngày đang trả HTTP 500 kèm thông báo thiếu cấu hình. Phải đặt trước khi cron chạy lần đầu, nếu không thực đơn sáng hôm sau phải chuyển tay.
+- Cột `Product.unit` còn trong cơ sở dữ liệu nhưng không còn dùng — xoá bằng migration khi chắc chắn không cần.
