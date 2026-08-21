@@ -30,6 +30,37 @@ export const viewport: Viewport = {
   themeColor: "#f8fdf7",
 };
 
+const localBusinessSchema = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  name: "Gọt Gòi Nè",
+  image: "https://gotgoine.vercel.app/images/logo-main.jpg",
+  description:
+    "Trái cây tươi gọt sẵn, đóng hộp ăn liền, đặt online và giao tận nơi. Đặt trước 30-60 phút.",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "Đường 30/4",
+    addressLocality: "Phú Lợi",
+    addressRegion: "Sóc Trăng",
+    addressCountry: "VN",
+  },
+  openingHoursSpecification: {
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ],
+    opens: "10:00",
+    closes: "20:00",
+  },
+  url: "https://gotgoine.vercel.app",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,6 +69,10 @@ export default function RootLayout({
   return (
     <html lang="vi" className="h-full antialiased bg-[#f8fdf7]">
       <body className="min-h-dvh flex flex-col bg-[#f8fdf7] text-neutral-900">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+        />
         {children}
         <Analytics />
       </body>
