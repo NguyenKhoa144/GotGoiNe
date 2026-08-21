@@ -35,11 +35,17 @@ model Product {
   // Ảnh thật thay cho emoji — thêm sẵn cột để sau này bật upload không phải
   // migrate lại; hiện chưa dùng, giao diện vẫn hiển thị emoji.
   imageUrl    String?
+  // Tồn kho tủ lạnh, tính bằng gram. Đây là NGUỒN SỰ THẬT duy nhất về việc
+  // quán còn bao nhiêu của loại này — chạy dài qua ngày, không reset theo
+  // ngày như DailyMenuEntry.qtyGrams trước đây. Mọi thay đổi phải đi kèm một
+  // dòng StockMovement giải thích vì sao, không bao giờ sửa trần.
+  stockGrams  Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   menuEntries DailyMenuEntry[]
   losses      InventoryLoss[]
+  movements   StockMovement[]
 }
 
 // Một dòng = một loại trái cây trong thực đơn của MỘT ngày. Không ghi đè qua
@@ -74,4 +80,35 @@ model InventoryLoss {
   reason      String
   note        String?
   createdAt   DateTime @default(now())
+}
+
+// Nhật ký mọi biến động của tủ lạnh: nhập hàng, bán ra, hao hụt. Một dòng =
+// một lần kho thay đổi, và Product.stockGrams luôn bằng tổng đại số của các
+// dòng này. Nhờ vậy con số tồn kho luôn giải thích được — sai ở đâu thì dò
+// lại được tới đúng thao tác gây ra.
+model StockMovement {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // Ngày áp dụng theo lịch Việt Nam (00:00 UTC của ngày đó), để gom nhóm
+  // thống kê theo ngày mà không lệch múi giờ.
+  date        DateTime @db.Date
+  // IMPORT: nhập thêm hàng vào tủ (cộng kho).
+  // SALE:    bán ra cho khách (trừ kho).
+  // LOSS:    mất vì lý do khác — Thảo ăn, hư/dập... (trừ kho).
+  // ADJUST:  admin sửa tay cho khớp thực tế (cộng hoặc trừ).
+  kind        String
+  // Luôn là số DƯƠNG. Hướng cộng/trừ do `kind` quyết định, không nhét dấu âm
+  // vào đây — nếu không, mọi phép cộng thống kê đều phải nhớ quy ước riêng.
+  amountGrams Int
+  // Chênh lệch thực tế đã áp vào kho (dương = cộng, âm = trừ). Ghi sẵn để
+  // cộng dồn ra tồn kho mà không phải suy diễn lại từ `kind`.
+  deltaGrams  Int
+  // Với LOSS là lý do bắt buộc; với ADJUST là ghi chú tuỳ ý.
+  reason      String?
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@index([productId, date])
+  @@index([date])
 }
