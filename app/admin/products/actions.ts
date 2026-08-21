@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { PRODUCT_CATEGORIES } from "@/data/home";
 import { vnToday } from "@/lib/date-vn";
 import { parseVnd } from "@/lib/money";
+import { PRODUCT_UNITS, defaultQty, formatQty } from "@/lib/qty";
 
 // Mọi thay đổi thực đơn đều phải làm mới cả trang quản trị lẫn trang chủ —
 // trang chủ đọc thẳng thực đơn hôm nay nên khách thấy ngay, không chờ deploy.
@@ -13,11 +14,6 @@ function revalidateAll() {
   revalidatePath("/admin/fridge");
   revalidatePath("/admin");
   revalidatePath("/");
-}
-
-/** Định lượng mặc định khi mới đưa một loại vào thực đơn. */
-function defaultQty(unit: string) {
-  return unit === "kg" ? 1000 : 10;
 }
 
 export async function createProduct(_prevState: string | undefined, formData: FormData) {
@@ -30,6 +26,9 @@ export async function createProduct(_prevState: string | undefined, formData: Fo
   if (!name) return "Vui lòng nhập tên sản phẩm.";
   if (!(PRODUCT_CATEGORIES as readonly string[]).includes(category)) {
     return "Vui lòng chọn danh mục.";
+  }
+  if (!(PRODUCT_UNITS as readonly string[]).includes(unit)) {
+    return "Đơn vị không hợp lệ.";
   }
 
   const last = await prisma.product.findFirst({ orderBy: { sortOrder: "desc" } });
@@ -65,6 +64,9 @@ export async function updateProduct(id: string, _prevState: string | undefined, 
 
   if (!(PRODUCT_CATEGORIES as readonly string[]).includes(category)) {
     return "Danh mục không hợp lệ.";
+  }
+  if (!(PRODUCT_UNITS as readonly string[]).includes(unit)) {
+    return "Đơn vị không hợp lệ.";
   }
   if (!emoji || !name) return "Vui lòng điền icon và tên sản phẩm.";
 
@@ -128,7 +130,10 @@ export async function updateMenuEntry(
   entryId: string,
   patch: { priceToday?: number; qtyGrams?: number; soldGrams?: number }
 ) {
-  const entry = await prisma.dailyMenuEntry.findUnique({ where: { id: entryId } });
+  const entry = await prisma.dailyMenuEntry.findUnique({
+    where: { id: entryId },
+    include: { product: true },
+  });
   if (!entry) return "Không tìm thấy dòng thực đơn.";
 
   const priceToday = patch.priceToday ?? entry.priceToday;
@@ -140,8 +145,10 @@ export async function updateMenuEntry(
   }
   // Đã bán + hư hỏng không thể vượt quá lượng nhập — chặn ở đây để "còn lại"
   // không bao giờ âm.
-  if (soldGrams + entry.spoiledGrams > qtyGrams) {
-    return `Đã bán + hư hỏng (${soldGrams + entry.spoiledGrams}g) vượt quá lượng nhập (${qtyGrams}g).`;
+  const used = soldGrams + entry.spoiledGrams;
+  if (used > qtyGrams) {
+    const unit = entry.product.unit;
+    return `Đã bán + hư hỏng (${formatQty(used, unit)}) vượt quá lượng nhập (${formatQty(qtyGrams, unit)}).`;
   }
 
   await prisma.dailyMenuEntry.update({

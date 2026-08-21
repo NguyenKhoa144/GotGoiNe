@@ -7,6 +7,7 @@ import {
   updateMenuEntry,
 } from "@/app/admin/products/actions";
 import { formatVnd } from "@/lib/money";
+import { formatQty, qtyUnitLabel, toPriceUnits } from "@/lib/qty";
 
 export type MenuEntryView = {
   id: string;
@@ -20,11 +21,6 @@ export type MenuEntryView = {
   soldGrams: number;
   spoiledGrams: number;
 };
-
-/** Nhãn đơn vị định lượng: hàng cân bán theo gram, còn lại giữ đơn vị gốc. */
-function qtyUnit(unit: string) {
-  return unit === "kg" ? "g" : unit;
-}
 
 function MenuRow({ entry, isFirst, isLast }: { entry: MenuEntryView; isFirst: boolean; isLast: boolean }) {
   const [price, setPrice] = useState(entry.priceToday);
@@ -106,7 +102,7 @@ function MenuRow({ entry, isFirst, isLast }: { entry: MenuEntryView; isFirst: bo
       </label>
 
       <label className="w-[100px] text-[11px] font-semibold text-neutral-600">
-        Nhập ({qtyUnit(entry.unit)})
+        Nhập ({qtyUnitLabel(entry.unit)})
         <input
           type="number"
           min={0}
@@ -118,7 +114,7 @@ function MenuRow({ entry, isFirst, isLast }: { entry: MenuEntryView; isFirst: bo
       </label>
 
       <label className="w-[100px] text-[11px] font-semibold text-neutral-600">
-        Đã bán ({qtyUnit(entry.unit)})
+        Đã bán ({qtyUnitLabel(entry.unit)})
         <input
           type="number"
           min={0}
@@ -134,8 +130,7 @@ function MenuRow({ entry, isFirst, isLast }: { entry: MenuEntryView; isFirst: bo
         <div
           className={`text-sm font-bold ${remaining > 0 ? "text-[#1e5c2e]" : "text-neutral-400"}`}
         >
-          {remaining}
-          {qtyUnit(entry.unit)}
+          {formatQty(remaining, entry.unit)}
         </div>
       </div>
 
@@ -161,8 +156,7 @@ type MenuPanelProps = {
 
 export function MenuPanel({ entries, todayLabel }: MenuPanelProps) {
   const revenueSoFar = entries.reduce((sum, e) => {
-    const factor = e.unit === "kg" ? e.soldGrams / 1000 : e.soldGrams;
-    return sum + factor * e.priceToday;
+    return sum + toPriceUnits(e.soldGrams, e.unit) * e.priceToday;
   }, 0);
 
   return (

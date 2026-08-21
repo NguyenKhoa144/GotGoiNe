@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { PRODUCT_UNITS } from "@/lib/qty";
 
 export type ProductFormValues = {
   category: string;
@@ -57,9 +58,11 @@ export function ProductForm({ action, categories, initial, submitLabel }: Produc
         <label className={label}>
           Đơn vị
           <select name="unit" defaultValue={initial.unit} className={field}>
-            <option value="kg">kg</option>
-            <option value="quả">quả</option>
-            <option value="hộp">hộp</option>
+            {PRODUCT_UNITS.map((u) => (
+              <option key={u} value={u}>
+                {u}
+              </option>
+            ))}
           </select>
         </label>
       </div>

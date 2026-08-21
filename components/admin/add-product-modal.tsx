@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { createProduct } from "@/app/admin/products/actions";
+import { PRODUCT_UNITS } from "@/lib/qty";
 
 type AddProductModalProps = {
   categories: readonly string[];
@@ -90,12 +91,14 @@ export function AddProductModal({ categories, onClose }: AddProductModalProps) {
               Đơn vị
               <select
                 name="unit"
-                defaultValue="kg"
+                defaultValue="hộp"
                 className="rounded-lg border border-neutral-300 px-3 py-2 font-normal outline-none focus:border-[#1e5c2e]"
               >
-                <option value="kg">kg</option>
-                <option value="quả">quả</option>
-                <option value="hộp">hộp</option>
+                {PRODUCT_UNITS.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
               </select>
             </label>
           </div>

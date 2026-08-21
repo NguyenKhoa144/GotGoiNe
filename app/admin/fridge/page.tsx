@@ -2,17 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { addDays, formatShortDate, formatVnDate, vnToday } from "@/lib/date-vn";
 import { formatVnd } from "@/lib/money";
 import { SpoilageForm } from "@/components/admin/spoilage-form";
+import { formatQty, qtyUnitLabel, toPriceUnits } from "@/lib/qty";
 
 export const dynamic = "force-dynamic";
-
-/** Quy đổi số lượng ra "số đơn vị tính tiền": hàng cân theo kg thì gram/1000. */
-function toPriceUnits(grams: number, unit: string) {
-  return unit === "kg" ? grams / 1000 : grams;
-}
-
-function qtyUnit(unit: string) {
-  return unit === "kg" ? "g" : unit;
-}
 
 export default async function AdminFridgePage() {
   const today = vnToday();
@@ -31,11 +23,6 @@ export default async function AdminFridgePage() {
     }),
   ]);
 
-  const todayLossGrams = weekLosses
-    .filter((loss) => loss.date.getTime() === today.getTime())
-    .reduce((sum, loss) => sum + loss.amountGrams, 0);
-  const weekLossGrams = weekLosses.reduce((sum, loss) => sum + loss.amountGrams, 0);
-
   // Giá trị tổn thất lấy theo giá bán của đúng ngày xảy ra hao hụt; nếu ngày
   // đó không còn dòng thực đơn thì bỏ qua (không đoán giá).
   const priceByProductDate = new Map<string, number>();
@@ -47,11 +34,17 @@ export default async function AdminFridgePage() {
     priceByProductDate.set(`${entry.productId}:${entry.date.getTime()}`, entry.priceToday);
   }
 
-  const weekLossValue = weekLosses.reduce((sum, loss) => {
+  const lossValue = (loss: (typeof weekLosses)[number]) => {
     const price = priceByProductDate.get(`${loss.productId}:${loss.date.getTime()}`);
-    if (price === undefined) return sum;
-    return sum + toPriceUnits(loss.amountGrams, loss.product.unit) * price;
-  }, 0);
+    if (price === undefined) return 0;
+    return toPriceUnits(loss.amountGrams, loss.product.unit) * price;
+  };
+
+  // Không cộng gộp số lượng giữa các đơn vị khác nhau (500g xoài + 2 hộp quà
+  // ra "502" là con số vô nghĩa) — chỉ tổng hợp theo số lượt và theo tiền.
+  const todayLosses = weekLosses.filter((loss) => loss.date.getTime() === today.getTime());
+  const todayLossValue = todayLosses.reduce((sum, loss) => sum + lossValue(loss), 0);
+  const weekLossValue = weekLosses.reduce((sum, loss) => sum + lossValue(loss), 0);
 
   const kpi = "rounded-[14px] border border-neutral-200 bg-white p-4";
 
@@ -66,11 +59,12 @@ export default async function AdminFridgePage() {
       <div className="mb-4 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
         <div className={kpi}>
           <div className="text-[11px] text-neutral-500">Hao hụt hôm nay</div>
-          <div className="text-xl font-bold text-[#152b1a]">{todayLossGrams}g</div>
+          <div className="text-xl font-bold text-[#152b1a]">{todayLosses.length} lượt</div>
+          <div className="text-[11px] text-neutral-500">{formatVnd(todayLossValue)}</div>
         </div>
         <div className={kpi}>
           <div className="text-[11px] text-neutral-500">Hao hụt 7 ngày qua</div>
-          <div className="text-xl font-bold text-[#152b1a]">{weekLossGrams}g</div>
+          <div className="text-xl font-bold text-[#152b1a]">{weekLosses.length} lượt</div>
         </div>
         <div className={kpi}>
           <div className="text-[11px] text-neutral-500">Giá trị tổn thất (7 ngày)</div>
@@ -90,7 +84,7 @@ export default async function AdminFridgePage() {
           <div className="flex flex-col gap-2">
             {entries.map((entry) => {
               const remaining = entry.qtyGrams - entry.soldGrams - entry.spoiledGrams;
-              const unit = qtyUnit(entry.product.unit);
+              const unit = entry.product.unit;
               return (
                 <div
                   key={entry.id}
@@ -102,25 +96,25 @@ export default async function AdminFridgePage() {
                   </div>
                   <div className="flex gap-3 text-[11px] text-neutral-600">
                     <span>
-                      Nhập <strong className="text-[#152b1a]">{entry.qtyGrams}{unit}</strong>
+                      Nhập <strong className="text-[#152b1a]">{formatQty(entry.qtyGrams, unit)}</strong>
                     </span>
                     <span>
-                      Đã bán <strong className="text-[#152b1a]">{entry.soldGrams}{unit}</strong>
+                      Đã bán <strong className="text-[#152b1a]">{formatQty(entry.soldGrams, unit)}</strong>
                     </span>
                     <span>
                       Hư hỏng{" "}
                       <strong className={entry.spoiledGrams > 0 ? "text-orange-600" : "text-[#152b1a]"}>
-                        {entry.spoiledGrams}{unit}
+                        {formatQty(entry.spoiledGrams, unit)}
                       </strong>
                     </span>
                     <span>
                       Còn lại{" "}
                       <strong className={remaining > 0 ? "text-[#1e5c2e]" : "text-neutral-400"}>
-                        {remaining}{unit}
+                        {formatQty(remaining, unit)}
                       </strong>
                     </span>
                   </div>
-                  <SpoilageForm productId={entry.productId} unitLabel={unit} />
+                  <SpoilageForm productId={entry.productId} unitLabel={qtyUnitLabel(unit)} />
                 </div>
               );
             })}
@@ -146,8 +140,7 @@ export default async function AdminFridgePage() {
                 </span>
                 <span className="flex-1 font-semibold text-[#152b1a]">{loss.product.name}</span>
                 <span className="text-neutral-600">
-                  {loss.amountGrams}
-                  {qtyUnit(loss.product.unit)}
+                  {formatQty(loss.amountGrams, loss.product.unit)}
                 </span>
                 <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-medium text-orange-700">
                   {loss.reason}

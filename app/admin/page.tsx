@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatVnDate, vnToday } from "@/lib/date-vn";
 import { formatVnd } from "@/lib/money";
+import { toPriceUnits } from "@/lib/qty";
 import { getPendingCarryDate } from "@/lib/close-day";
 import { CarryForwardBanner } from "@/components/admin/carry-forward-banner";
 
@@ -20,11 +21,13 @@ export default async function AdminHomePage() {
     (e) => e.qtyGrams - e.soldGrams - e.spoiledGrams > 0
   ).length;
   const soldOut = entries.length - onSale;
-  const spoiledToday = entries.reduce((sum, e) => sum + e.spoiledGrams, 0);
-  const revenueToday = entries.reduce((sum, e) => {
-    const units = e.product.unit === "kg" ? e.soldGrams / 1000 : e.soldGrams;
-    return sum + units * e.priceToday;
-  }, 0);
+  // Đếm số loại có hao hụt thay vì cộng số lượng — các loại dùng đơn vị khác
+  // nhau (gram, hộp, ly) nên cộng gộp lại không ra con số có nghĩa.
+  const spoiledCount = entries.filter((e) => e.spoiledGrams > 0).length;
+  const revenueToday = entries.reduce(
+    (sum, e) => sum + toPriceUnits(e.soldGrams, e.product.unit) * e.priceToday,
+    0
+  );
 
   const card =
     "rounded-xl border border-neutral-200 bg-white p-4 transition-colors hover:border-[#1e5c2e]";
@@ -48,8 +51,8 @@ export default async function AdminHomePage() {
           <div className="text-xl font-bold text-[#152b1a]">{soldOut} loại</div>
         </div>
         <div className="rounded-xl border border-neutral-200 bg-white p-4">
-          <div className="text-[11px] text-neutral-500">Hao hụt hôm nay</div>
-          <div className="text-xl font-bold text-[#152b1a]">{spoiledToday}g</div>
+          <div className="text-[11px] text-neutral-500">Loại có hao hụt</div>
+          <div className="text-xl font-bold text-[#152b1a]">{spoiledCount} loại</div>
         </div>
         <div className="rounded-xl border border-neutral-200 bg-white p-4">
           <div className="text-[11px] text-neutral-500">Doanh thu tạm tính</div>
