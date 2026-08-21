@@ -187,15 +187,21 @@ Có **hai** chỗ liệt kê trái cây, cả hai đọc cùng một nguồn —
 
 | Tab | Đường dẫn | Nội dung |
 | --- | --- | --- |
-| Tổng quan | `/admin` | Đang bán, đã bán hết, hao hụt, đã bán hôm nay + lối tắt |
-| Sản phẩm | `/admin/products` | Hai cột: danh sách trái cây (tìm kiếm, thêm mới) và thực đơn hôm nay (giá, nhập, đã bán, còn lại, đổi thứ tự) |
-| Tủ lạnh | `/admin/fridge` | Ba thẻ chỉ số, tồn kho hôm nay + form ghi nhận hư hỏng, nhật ký 7 ngày |
+| Tổng quan | `/admin` | Đang bán, hết hàng, hao hụt, đã bán, tổng tồn kho + lối tắt |
+| Daily menu | `/admin/menu` | Hai cột: trái cây tổng (tìm kiếm, thêm mới kèm tên/mô tả/ảnh) và thực đơn hôm nay (kéo thả để thêm và đổi thứ tự) |
+| Tủ lạnh | `/admin/fridge` | Tồn kho toàn bộ trái cây + ô thao tác trên từng dòng, nút "Thống kê" bật/tắt (theo ngày / 7 ngày) |
 | Thống kê | `/admin/stats` | Theo tháng: lượng bán, hao hụt, tỷ lệ, biểu đồ tuần, bán chạy, hao hụt theo lý do |
 | Poster | `/admin/poster` | Công cụ tạo poster, xuất PNG bằng html2canvas |
 
-Ô nhập số trong thực đơn lưu khi **rời ô** chứ không lưu theo từng ký tự — gõ "1000" mà bắn 4 lượt ghi là lãng phí. Sau khi lưu, dòng được dựng lại nhờ `key` gộp cả số liệu máy chủ, thay vì đồng bộ state bằng `useEffect`.
+Thực đơn **không giữ định lượng nào** — tồn kho nằm ở `Product.stockGrams`, một nơi duy nhất. Dòng thực đơn chỉ trả lời câu hỏi "hôm nay có bày bán loại này không".
 
-`reportSpoilage` gói việc trừ kho và ghi nhật ký vào một `$transaction` — tách rời thì một lần lỗi giữa chừng sẽ để lại kho bị trừ mà không có dòng nào giải thích.
+Mọi thay đổi tồn kho đi qua `lib/stock.ts`; không nơi nào được ghi thẳng vào `stockGrams`. Hàm ở đó gói việc trừ kho và ghi nhật ký vào một `$transaction` — tách rời thì một lần lỗi giữa chừng sẽ để lại kho bị trừ mà không có dòng nào giải thích. Tồn kho âm bị chặn ngay tại cửa.
+
+Thao tác "Đếm lại, sửa tồn thành" nhận số gram **thật sự vừa đếm được**, máy tự tính chênh lệch rồi ghi một dòng `ADJUST`. Bắt admin tự tính chênh lệch là cách chắc chắn nhất để có số sai.
+
+Kéo thả dùng HTML5 `dataTransfer` với một định dạng riêng (`application/x-gotgoine-product`) để bảng thực đơn không nhận nhầm thứ kéo từ nơi khác vào. Kéo thả **không chạy trên màn hình cảm ứng**, nên nút "+ Thêm" và "×" luôn được giữ làm đường đi thay thế.
+
+Ảnh trái cây được nén và cắt vuông ngay trong trình duyệt trước khi gửi lên (`lib/compress-image.ts`), rồi lưu ở Vercel Blob. Chưa bật Blob thì ô tải file bị khoá và admin dán link ảnh — tính năng không gãy, chỉ bớt tiện.
 
 ---
 

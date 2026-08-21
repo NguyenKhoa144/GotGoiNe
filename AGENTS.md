@@ -20,27 +20,39 @@ lint → typecheck → build.
 
 The shop is run as a **daily menu**, not a static catalogue:
 
-- `Product` is the catalogue: every fruit the shop has ever sold.
-- `DailyMenuEntry` is one fruit on sale on one specific date, holding
-  `qtyGrams` / `soldGrams` / `spoiledGrams` and that day's price. One row
-  per product per day (`@@unique([productId, date])`); old days are kept as
-  history, never overwritten.
-- `InventoryLoss` is the spoilage log — every write-off records a reason.
+- `Product` is the catalogue: every fruit the shop has ever sold. It also
+  owns **`stockGrams` — the single source of truth for what's in the
+  fridge**, a running balance that carries across days on its own.
+- `StockMovement` is the ledger: one row per change, `kind` being
+  `IMPORT` / `SALE` / `LOSS` / `ADJUST`. `stockGrams` always equals the sum
+  of their `deltaGrams`, so a wrong number can be traced to the operation
+  that caused it.
+- `DailyMenuEntry` holds **no quantities**. It only answers "is this fruit
+  on display today". One row per product per day
+  (`@@unique([productId, date])`); old days are kept as history.
+- `InventoryLoss` is the old spoilage log, superseded by `StockMovement`
+  (`kind: "LOSS"`). Nothing writes to it any more.
 
-`còn lại = qtyGrams − soldGrams − spoiledGrams`. At 00:00 Vietnam time a
-Vercel Cron hits `/api/cron/close-day`: fruit with stock left carries into
-today's menu at exactly that remaining amount (sold/spoiled reset to 0),
-fruit at zero drops out of the menu. Closing a day never deletes anything.
+At 00:00 Vietnam time a Vercel Cron hits `/api/cron/close-day`, which now
+only carries the **list** forward: yesterday's fruit stays on today's menu
+if the fridge still has some. Nothing is deleted, no quantity is computed.
 
-**The Vietnamese landing page renders today's menu**, not `Product` rows —
-sold-out fruit disappears from the customer's view. Both the product grid
-and the "Tự tay ghép hộp" builder read the same list; if you add a third
-place that lists fruit, wire it to the same source.
+**The Vietnamese landing page renders today's menu**, not `Product` rows.
+A fruit is visible only when it is on today's menu **and** `stockGrams > 0`
+— that one condition is the whole "sold out disappears, restocked
+reappears" rule, no background job involved. Both the product grid and the
+"Tự tay ghép hộp" builder read the same list; if you add a third place that
+lists fruit, wire it to the same source.
 
 ### Invariants — breaking these has caused real bugs
 
 - **Quantities are always grams.** Fruit comes in by weight; selling it as
   boxes is packaging. Do not reintroduce per-product selling units.
+- **Never write `Product.stockGrams` directly.** Every change goes through
+  `lib/stock.ts`, so it always carries a ledger row explaining why. Writing
+  it raw is how a stock number becomes untraceable.
+- **Customers are never shown a per-fruit price.** Pricing is per box size;
+  fruit cards show image, name and description only.
 - **Never sum quantities across different units, and never multiply grams
   by a per-box price.** If a number cannot be derived honestly, leave it
   out rather than showing a plausible-looking wrong one.
@@ -58,10 +70,14 @@ place that lists fruit, wire it to the same source.
 
 - `app/page.tsx` — Server Component, loads today's menu; interactivity lives
   in `components/home/home-content.tsx` (Client).
-- `app/admin/*` — Tổng quan · Sản phẩm (catalogue + today's menu) · Tủ lạnh
-  (stock & spoilage) · Thống kê (monthly) · Poster. Protected by `proxy.ts`.
-- `lib/` — `products.ts` (today's menu for the landing page), `close-day.ts`,
-  `date-vn.ts`, `stats.ts`, `qty.ts`, `money.ts`, `prisma.ts`.
+- `app/admin/*` — Tổng quan · **Daily menu** (`/admin/menu`: catalogue +
+  today's menu, drag & drop) · Tủ lạnh (stock in/out + ledger) · Thống kê
+  (monthly, **still reading the retired columns — its numbers are stale**) ·
+  Poster. Protected by `proxy.ts`.
+- `lib/` — `stock.ts` (the only door into inventory), `products.ts` (today's
+  menu for the landing page), `upload.ts` + `compress-image.ts` +
+  `image-url.ts` (fruit photos), `close-day.ts`, `date-vn.ts`, `stats.ts`,
+  `qty.ts`, `money.ts`, `prisma.ts`.
 - `prisma/*.mjs` — one-off data scripts. Prisma CLI does **not** read
   `.env.local`; run `set -a && source .env.local && set +a && npx prisma ...`.
 - One Neon database is shared by production, preview and local dev — local
