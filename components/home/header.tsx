@@ -21,7 +21,7 @@ export function Header({ categories, activeCategoryIndex, onCategoryChange }: He
       <div className="home-nav-top">
         <a href="#top" className="home-nav-logo" aria-label={t.backToTop}>
           <Image
-            src="/images/logo-main.jpg"
+            src="/images/logo-mark.jpg"
             alt="GỌT GÒI NÈ"
             width={48}
             height={48}

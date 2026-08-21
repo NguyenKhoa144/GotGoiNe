@@ -18,8 +18,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/images/logo-main.jpg",
-        width: 1103,
-        height: 1103,
+        width: 1254,
+        height: 1254,
         alt: "Gọt Gòi Nè",
       },
     ],
