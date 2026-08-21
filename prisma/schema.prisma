@@ -19,3 +19,19 @@ model User {
   role         String   @default("user")
   createdAt    DateTime @default(now())
 }
+
+model Product {
+  id          String   @id @default(cuid())
+  category    String
+  emoji       String
+  name        String
+  weight      String
+  price       String
+  badge       String?
+  featured    Boolean  @default(false)
+  description String?
+  available   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

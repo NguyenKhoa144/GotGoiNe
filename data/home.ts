@@ -338,3 +338,8 @@ const homeContent: Record<Lang, HomeContent> = {
 export function getHomeContent(lang: Lang): HomeContent {
   return homeContent[lang];
 }
+
+// Danh mục sản phẩm dùng chung cho form quản trị (/admin/products) — lấy từ
+// bản VI duy nhất vì admin chỉ quản lý nội dung tiếng Việt, tránh khai báo
+// trùng danh sách này ở hai nơi rồi lệch nhau.
+export const PRODUCT_CATEGORIES = homeContent.vi.categories;

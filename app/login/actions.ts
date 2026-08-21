@@ -9,7 +9,7 @@ export async function authenticate(_prevState: string | undefined, formData: For
     await signIn("credentials", {
       username: formData.get("username"),
       password: formData.get("password"),
-      redirectTo: typeof callbackUrl === "string" && callbackUrl ? callbackUrl : "/",
+      redirectTo: typeof callbackUrl === "string" && callbackUrl ? callbackUrl : "/admin",
     });
   } catch (error) {
     if (error instanceof AuthError) {
