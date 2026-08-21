@@ -35,7 +35,6 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           price: product.price,
           badge: product.badge ?? undefined,
           description: product.description ?? undefined,
-          unit: product.unit,
           featured: product.featured,
         }}
       />

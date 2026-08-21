@@ -2,7 +2,6 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { createProduct } from "@/app/admin/products/actions";
-import { PRODUCT_UNITS } from "@/lib/qty";
 
 type AddProductModalProps = {
   categories: readonly string[];
@@ -78,30 +77,14 @@ export function AddProductModal({ categories, onClose }: AddProductModalProps) {
             </select>
           </label>
 
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1 text-sm font-semibold text-neutral-700">
-              Icon
-              <input
-                name="emoji"
-                placeholder="🍐"
-                className="rounded-lg border border-neutral-300 px-3 py-2 font-normal outline-none focus:border-[#1e5c2e]"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm font-semibold text-neutral-700">
-              Đơn vị
-              <select
-                name="unit"
-                defaultValue="hộp"
-                className="rounded-lg border border-neutral-300 px-3 py-2 font-normal outline-none focus:border-[#1e5c2e]"
-              >
-                {PRODUCT_UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <label className="flex flex-col gap-1 text-sm font-semibold text-neutral-700">
+            Icon (emoji)
+            <input
+              name="emoji"
+              placeholder="🍐"
+              className="rounded-lg border border-neutral-300 px-3 py-2 font-normal outline-none focus:border-[#1e5c2e]"
+            />
+          </label>
 
           <label className="flex flex-col gap-1 text-sm font-semibold text-neutral-700">
             Mô tả (tuỳ chọn)

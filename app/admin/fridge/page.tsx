@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { addDays, formatShortDate, formatVnDate, vnToday } from "@/lib/date-vn";
-import { formatVnd } from "@/lib/money";
 import { SpoilageForm } from "@/components/admin/spoilage-form";
-import { formatQty, qtyUnitLabel, toPriceUnits } from "@/lib/qty";
+import { formatGrams } from "@/lib/qty";
 
 export const dynamic = "force-dynamic";
 
@@ -23,28 +22,17 @@ export default async function AdminFridgePage() {
     }),
   ]);
 
-  // Giá trị tổn thất lấy theo giá bán của đúng ngày xảy ra hao hụt; nếu ngày
-  // đó không còn dòng thực đơn thì bỏ qua (không đoán giá).
-  const priceByProductDate = new Map<string, number>();
-  const weekEntries = await prisma.dailyMenuEntry.findMany({
-    where: { date: { gte: weekAgo } },
-    select: { productId: true, date: true, priceToday: true },
-  });
-  for (const entry of weekEntries) {
-    priceByProductDate.set(`${entry.productId}:${entry.date.getTime()}`, entry.priceToday);
-  }
-
-  const lossValue = (loss: (typeof weekLosses)[number]) => {
-    const price = priceByProductDate.get(`${loss.productId}:${loss.date.getTime()}`);
-    if (price === undefined) return 0;
-    return toPriceUnits(loss.amountGrams, loss.product.unit) * price;
-  };
-
-  // Không cộng gộp số lượng giữa các đơn vị khác nhau (500g xoài + 2 hộp quà
-  // ra "502" là con số vô nghĩa) — chỉ tổng hợp theo số lượt và theo tiền.
+  // Mọi định lượng đều là gram nên cộng gộp được trực tiếp.
   const todayLosses = weekLosses.filter((loss) => loss.date.getTime() === today.getTime());
-  const todayLossValue = todayLosses.reduce((sum, loss) => sum + lossValue(loss), 0);
-  const weekLossValue = weekLosses.reduce((sum, loss) => sum + lossValue(loss), 0);
+  const todayLossGrams = todayLosses.reduce((sum, loss) => sum + loss.amountGrams, 0);
+  const weekLossGrams = weekLosses.reduce((sum, loss) => sum + loss.amountGrams, 0);
+
+  // Hư hỏng trên tổng lượng nhập của hôm nay — con số này mới cho biết hao hụt
+  // là nhiều hay ít, vì 500g hỏng trên 1kg khác hẳn 500g hỏng trên 20kg.
+  const stockedToday = entries.reduce((sum, e) => sum + e.qtyGrams, 0);
+  const spoiledToday = entries.reduce((sum, e) => sum + e.spoiledGrams, 0);
+  const spoilRateToday =
+    stockedToday > 0 ? `${((spoiledToday / stockedToday) * 100).toFixed(1)}%` : "—";
 
   const kpi = "rounded-[14px] border border-neutral-200 bg-white p-4";
 
@@ -59,16 +47,17 @@ export default async function AdminFridgePage() {
       <div className="mb-4 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
         <div className={kpi}>
           <div className="text-[11px] text-neutral-500">Hao hụt hôm nay</div>
-          <div className="text-xl font-bold text-[#152b1a]">{todayLosses.length} lượt</div>
-          <div className="text-[11px] text-neutral-500">{formatVnd(todayLossValue)}</div>
+          <div className="text-xl font-bold text-[#152b1a]">{formatGrams(todayLossGrams)}</div>
+          <div className="text-[11px] text-neutral-500">{todayLosses.length} lượt ghi nhận</div>
         </div>
         <div className={kpi}>
           <div className="text-[11px] text-neutral-500">Hao hụt 7 ngày qua</div>
-          <div className="text-xl font-bold text-[#152b1a]">{weekLosses.length} lượt</div>
+          <div className="text-xl font-bold text-[#152b1a]">{formatGrams(weekLossGrams)}</div>
+          <div className="text-[11px] text-neutral-500">{weekLosses.length} lượt ghi nhận</div>
         </div>
         <div className={kpi}>
-          <div className="text-[11px] text-neutral-500">Giá trị tổn thất (7 ngày)</div>
-          <div className="text-xl font-bold text-[#152b1a]">{formatVnd(weekLossValue)}</div>
+          <div className="text-[11px] text-neutral-500">Tỷ lệ hao hụt hôm nay</div>
+          <div className="text-xl font-bold text-[#152b1a]">{spoilRateToday}</div>
         </div>
       </div>
 
@@ -84,7 +73,6 @@ export default async function AdminFridgePage() {
           <div className="flex flex-col gap-2">
             {entries.map((entry) => {
               const remaining = entry.qtyGrams - entry.soldGrams - entry.spoiledGrams;
-              const unit = entry.product.unit;
               return (
                 <div
                   key={entry.id}
@@ -96,25 +84,25 @@ export default async function AdminFridgePage() {
                   </div>
                   <div className="flex gap-3 text-[11px] text-neutral-600">
                     <span>
-                      Nhập <strong className="text-[#152b1a]">{formatQty(entry.qtyGrams, unit)}</strong>
+                      Nhập <strong className="text-[#152b1a]">{formatGrams(entry.qtyGrams)}</strong>
                     </span>
                     <span>
-                      Đã bán <strong className="text-[#152b1a]">{formatQty(entry.soldGrams, unit)}</strong>
+                      Đã bán <strong className="text-[#152b1a]">{formatGrams(entry.soldGrams)}</strong>
                     </span>
                     <span>
                       Hư hỏng{" "}
                       <strong className={entry.spoiledGrams > 0 ? "text-orange-600" : "text-[#152b1a]"}>
-                        {formatQty(entry.spoiledGrams, unit)}
+                        {formatGrams(entry.spoiledGrams)}
                       </strong>
                     </span>
                     <span>
                       Còn lại{" "}
                       <strong className={remaining > 0 ? "text-[#1e5c2e]" : "text-neutral-400"}>
-                        {formatQty(remaining, unit)}
+                        {formatGrams(remaining)}
                       </strong>
                     </span>
                   </div>
-                  <SpoilageForm productId={entry.productId} unitLabel={qtyUnitLabel(unit)} />
+                  <SpoilageForm productId={entry.productId} />
                 </div>
               );
             })}
@@ -140,7 +128,7 @@ export default async function AdminFridgePage() {
                 </span>
                 <span className="flex-1 font-semibold text-[#152b1a]">{loss.product.name}</span>
                 <span className="text-neutral-600">
-                  {formatQty(loss.amountGrams, loss.product.unit)}
+                  {formatGrams(loss.amountGrams)}
                 </span>
                 <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-medium text-orange-700">
                   {loss.reason}

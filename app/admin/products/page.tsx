@@ -32,7 +32,6 @@ export default async function AdminProductsPage() {
     name: entry.product.name,
     emoji: entry.product.emoji,
     category: entry.product.category,
-    unit: entry.product.unit,
     priceToday: entry.priceToday,
     qtyGrams: entry.qtyGrams,
     soldGrams: entry.soldGrams,

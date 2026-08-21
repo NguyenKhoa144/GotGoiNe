@@ -6,8 +6,7 @@ import {
   removeFromTodayMenu,
   updateMenuEntry,
 } from "@/app/admin/products/actions";
-import { formatVnd } from "@/lib/money";
-import { formatQty, qtyUnitLabel, toPriceUnits } from "@/lib/qty";
+import { formatGrams } from "@/lib/qty";
 
 export type MenuEntryView = {
   id: string;
@@ -15,7 +14,6 @@ export type MenuEntryView = {
   name: string;
   emoji: string;
   category: string;
-  unit: string;
   priceToday: number;
   qtyGrams: number;
   soldGrams: number;
@@ -90,7 +88,7 @@ function MenuRow({ entry, isFirst, isLast }: { entry: MenuEntryView; isFirst: bo
       </div>
 
       <label className="w-[110px] text-[11px] font-semibold text-neutral-600">
-        Giá / {entry.unit}
+        Giá bán (₫)
         <input
           type="number"
           min={0}
@@ -102,7 +100,7 @@ function MenuRow({ entry, isFirst, isLast }: { entry: MenuEntryView; isFirst: bo
       </label>
 
       <label className="w-[100px] text-[11px] font-semibold text-neutral-600">
-        Nhập ({qtyUnitLabel(entry.unit)})
+        Nhập (g)
         <input
           type="number"
           min={0}
@@ -114,7 +112,7 @@ function MenuRow({ entry, isFirst, isLast }: { entry: MenuEntryView; isFirst: bo
       </label>
 
       <label className="w-[100px] text-[11px] font-semibold text-neutral-600">
-        Đã bán ({qtyUnitLabel(entry.unit)})
+        Đã bán (g)
         <input
           type="number"
           min={0}
@@ -130,7 +128,7 @@ function MenuRow({ entry, isFirst, isLast }: { entry: MenuEntryView; isFirst: bo
         <div
           className={`text-sm font-bold ${remaining > 0 ? "text-[#1e5c2e]" : "text-neutral-400"}`}
         >
-          {formatQty(remaining, entry.unit)}
+          {formatGrams(remaining)}
         </div>
       </div>
 
@@ -155,9 +153,7 @@ type MenuPanelProps = {
 };
 
 export function MenuPanel({ entries, todayLabel }: MenuPanelProps) {
-  const revenueSoFar = entries.reduce((sum, e) => {
-    return sum + toPriceUnits(e.soldGrams, e.unit) * e.priceToday;
-  }, 0);
+  const soldToday = entries.reduce((sum, e) => sum + e.soldGrams, 0);
 
   return (
     <section className="rounded-[14px] border border-neutral-200 bg-white p-5">
@@ -167,8 +163,8 @@ export function MenuPanel({ entries, todayLabel }: MenuPanelProps) {
           <p className="text-[11px] text-neutral-500">{todayLabel}</p>
         </div>
         <div className="text-right">
-          <div className="text-[11px] text-neutral-500">Doanh thu tạm tính</div>
-          <div className="text-sm font-bold text-[#1e5c2e]">{formatVnd(revenueSoFar)}</div>
+          <div className="text-[11px] text-neutral-500">Đã bán hôm nay</div>
+          <div className="text-sm font-bold text-[#1e5c2e]">{formatGrams(soldToday)}</div>
         </div>
       </div>
 

@@ -4,12 +4,7 @@ import { useState, useTransition } from "react";
 import { reportSpoilage } from "@/app/admin/fridge/actions";
 import { SPOILAGE_REASONS } from "@/app/admin/fridge/constants";
 
-type SpoilageFormProps = {
-  productId: string;
-  unitLabel: string;
-};
-
-export function SpoilageForm({ productId, unitLabel }: SpoilageFormProps) {
+export function SpoilageForm({ productId }: { productId: string }) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState<string>(SPOILAGE_REASONS[0]);
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +34,8 @@ export function SpoilageForm({ productId, unitLabel }: SpoilageFormProps) {
         min={1}
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
-        placeholder={unitLabel}
-        aria-label={`Số lượng hư hỏng (${unitLabel})`}
+        placeholder="gram"
+        aria-label="Số lượng hư hỏng (gram)"
         className="w-[74px] rounded-md border border-neutral-300 px-2 py-1 text-sm outline-none focus:border-[#1e5c2e]"
       />
       <select

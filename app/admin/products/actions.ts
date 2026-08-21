@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { PRODUCT_CATEGORIES } from "@/data/home";
 import { vnToday } from "@/lib/date-vn";
 import { parseVnd } from "@/lib/money";
-import { PRODUCT_UNITS, defaultQty, formatQty } from "@/lib/qty";
+import { DEFAULT_QTY_GRAMS, formatGrams } from "@/lib/qty";
 
 // Mọi thay đổi thực đơn đều phải làm mới cả trang quản trị lẫn trang chủ —
 // trang chủ đọc thẳng thực đơn hôm nay nên khách thấy ngay, không chờ deploy.
@@ -21,14 +21,10 @@ export async function createProduct(_prevState: string | undefined, formData: Fo
   const category = String(formData.get("category") ?? "");
   const emoji = String(formData.get("emoji") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
-  const unit = String(formData.get("unit") ?? "kg");
 
   if (!name) return "Vui lòng nhập tên sản phẩm.";
   if (!(PRODUCT_CATEGORIES as readonly string[]).includes(category)) {
     return "Vui lòng chọn danh mục.";
-  }
-  if (!(PRODUCT_UNITS as readonly string[]).includes(unit)) {
-    return "Đơn vị không hợp lệ.";
   }
 
   const last = await prisma.product.findFirst({ orderBy: { sortOrder: "desc" } });
@@ -39,7 +35,6 @@ export async function createProduct(_prevState: string | undefined, formData: Fo
       category,
       emoji: emoji || "🍎",
       description: description || null,
-      unit,
       // Quy cách và giá để trống ở bước tạo nhanh — admin điền giá ngay trong
       // dòng thực đơn, còn quy cách sửa sau ở màn hình sửa sản phẩm.
       weight: "",
@@ -59,14 +54,10 @@ export async function updateProduct(id: string, _prevState: string | undefined, 
   const price = String(formData.get("price") ?? "").trim();
   const badge = String(formData.get("badge") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
-  const unit = String(formData.get("unit") ?? "kg");
   const featured = formData.get("featured") === "on";
 
   if (!(PRODUCT_CATEGORIES as readonly string[]).includes(category)) {
     return "Danh mục không hợp lệ.";
-  }
-  if (!(PRODUCT_UNITS as readonly string[]).includes(unit)) {
-    return "Đơn vị không hợp lệ.";
   }
   if (!emoji || !name) return "Vui lòng điền icon và tên sản phẩm.";
 
@@ -78,7 +69,6 @@ export async function updateProduct(id: string, _prevState: string | undefined, 
       name,
       weight,
       price,
-      unit,
       badge: badge || null,
       description: description || null,
       featured,
@@ -113,7 +103,7 @@ export async function addToTodayMenu(productId: string) {
       productId,
       date,
       priceToday: parseVnd(product.price),
-      qtyGrams: defaultQty(product.unit),
+      qtyGrams: DEFAULT_QTY_GRAMS,
       sortOrder: (last?.sortOrder ?? 0) + 1,
     },
   });
@@ -130,10 +120,7 @@ export async function updateMenuEntry(
   entryId: string,
   patch: { priceToday?: number; qtyGrams?: number; soldGrams?: number }
 ) {
-  const entry = await prisma.dailyMenuEntry.findUnique({
-    where: { id: entryId },
-    include: { product: true },
-  });
+  const entry = await prisma.dailyMenuEntry.findUnique({ where: { id: entryId } });
   if (!entry) return "Không tìm thấy dòng thực đơn.";
 
   const priceToday = patch.priceToday ?? entry.priceToday;
@@ -147,8 +134,7 @@ export async function updateMenuEntry(
   // không bao giờ âm.
   const used = soldGrams + entry.spoiledGrams;
   if (used > qtyGrams) {
-    const unit = entry.product.unit;
-    return `Đã bán + hư hỏng (${formatQty(used, unit)}) vượt quá lượng nhập (${formatQty(qtyGrams, unit)}).`;
+    return `Đã bán + hư hỏng (${formatGrams(used)}) vượt quá lượng nhập (${formatGrams(qtyGrams)}).`;
   }
 
   await prisma.dailyMenuEntry.update({

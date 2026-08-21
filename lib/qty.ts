@@ -1,30 +1,15 @@
 /**
- * Đơn vị bán của một loại hàng.
+ * Mọi định lượng trong hệ thống thực đơn/tủ lạnh đều tính bằng GRAM.
  *
- * "kg" là hàng cân (ổi, xoài nguyên trái...) — định lượng nhập/bán/hư hỏng
- * đều tính bằng GRAM để tránh số lẻ kiểu 0.8kg hay 4kg2.
- *
- * Các đơn vị còn lại là hàng đếm được (hộp cắt sẵn, ly hoa quả dầm, set quà)
- * — định lượng là số nguyên đúng đơn vị đó, không quy ra gram.
+ * Trái cây nhập về là hàng cân — dù bán ra dưới dạng hộp, ly hay set thì
+ * lượng trong kho vẫn là trọng lượng. Dùng gram (thay vì kg) để tránh số lẻ
+ * kiểu 0.8kg hay 4kg2, và để mọi phép cộng tồn kho/hao hụt đều cùng một đơn vị.
  */
-export const PRODUCT_UNITS = ["kg", "hộp", "ly", "set", "quả"] as const;
-
-/** Nhãn hiển thị cạnh con số: hàng cân ghi "g", hàng đếm ghi đúng đơn vị. */
-export function qtyUnitLabel(unit: string): string {
-  return unit === "kg" ? "g" : unit;
-}
-
-/** "1000g" cho hàng cân, "10 hộp" cho hàng đếm (có dấu cách cho dễ đọc). */
-export function formatQty(amount: number, unit: string): string {
-  return unit === "kg" ? `${amount}g` : `${amount} ${unit}`;
-}
 
 /** Định lượng gợi ý khi mới đưa một loại vào thực đơn. */
-export function defaultQty(unit: string): number {
-  return unit === "kg" ? 1000 : 10;
-}
+export const DEFAULT_QTY_GRAMS = 1000;
 
-/** Số đơn vị dùng để nhân với giá: hàng cân quy gram về kg, hàng đếm giữ nguyên. */
-export function toPriceUnits(amount: number, unit: string): number {
-  return unit === "kg" ? amount / 1000 : amount;
+/** 1000 -> "1000g". */
+export function formatGrams(amount: number): string {
+  return `${amount}g`;
 }

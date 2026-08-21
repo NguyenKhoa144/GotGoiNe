@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { PRODUCT_UNITS } from "@/lib/qty";
 
 export type ProductFormValues = {
   category: string;
@@ -11,7 +10,6 @@ export type ProductFormValues = {
   price: string;
   badge?: string;
   description?: string;
-  unit: string;
   featured: boolean;
 };
 
@@ -50,22 +48,10 @@ export function ProductForm({ action, categories, initial, submitLabel }: Produc
         </select>
       </label>
 
-      <div className="grid grid-cols-2 gap-4">
-        <label className={label}>
-          Icon (emoji)
-          <input name="emoji" defaultValue={initial.emoji} placeholder="🥭" className={field} required />
-        </label>
-        <label className={label}>
-          Đơn vị
-          <select name="unit" defaultValue={initial.unit} className={field}>
-            {PRODUCT_UNITS.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <label className={label}>
+        Icon (emoji)
+        <input name="emoji" defaultValue={initial.emoji} placeholder="🥭" className={field} required />
+      </label>
 
       <label className={label}>
         Tên sản phẩm
