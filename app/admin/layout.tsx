@@ -13,10 +13,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Tổng quan
           </Link>
           <Link
-            href="/admin/products"
+            href="/admin/menu"
             className="rounded-lg px-3 py-1.5 text-sm font-bold text-[#1E5C2D] hover:bg-[#EAF0E3]"
           >
-            Sản phẩm
+            Daily menu
           </Link>
           <Link
             href="/admin/fridge"

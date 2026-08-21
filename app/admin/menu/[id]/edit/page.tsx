@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { ProductForm } from "@/components/admin/product-form";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
 import { PRODUCT_CATEGORIES } from "@/data/home";
-import { updateProduct } from "@/app/admin/products/actions";
+import { updateProduct } from "@/app/admin/menu/actions";
+import { isBlobConfigured } from "@/lib/upload";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,7 +17,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   return (
     <div className="p-4">
       <div className="mx-auto flex max-w-xl items-center justify-between">
-        <Link href="/admin/products" className="text-sm text-neutral-500 hover:text-[#1e5c2e]">
+        <Link href="/admin/menu" className="text-sm text-neutral-500 hover:text-[#1e5c2e]">
           ← Về thực đơn
         </Link>
         <h1 className="text-lg font-bold text-[#152b1a]">Sửa sản phẩm</h1>
@@ -27,6 +28,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         action={boundUpdate}
         categories={PRODUCT_CATEGORIES}
         submitLabel="Lưu thay đổi"
+        blobEnabled={isBlobConfigured()}
         initial={{
           category: product.category,
           emoji: product.emoji,
@@ -36,6 +38,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           badge: product.badge ?? undefined,
           description: product.description ?? undefined,
           featured: product.featured,
+          imageUrl: product.imageUrl,
         }}
       />
     </div>

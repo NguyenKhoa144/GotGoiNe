@@ -2,53 +2,67 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { vnToday } from "@/lib/date-vn";
-import { SPOILAGE_REASONS } from "./constants";
+import { applyStockMovement } from "@/lib/stock";
+import { FRIDGE_ACTIONS, type FridgeActionId } from "./constants";
 
-export async function reportSpoilage(
-  productId: string,
-  amountGrams: number,
-  reason: string,
-  note?: string
-) {
-  if (!Number.isFinite(amountGrams) || amountGrams <= 0) {
-    return "Số lượng hư hỏng phải lớn hơn 0.";
-  }
-  if (!(SPOILAGE_REASONS as readonly string[]).includes(reason)) {
-    return "Vui lòng chọn lý do.";
-  }
-
-  const date = vnToday();
-  const entry = await prisma.dailyMenuEntry.findUnique({
-    where: { productId_date: { productId, date } },
-  });
-  if (!entry) return "Loại này không có trong thực đơn hôm nay.";
-
-  const remaining = entry.qtyGrams - entry.soldGrams - entry.spoiledGrams;
-  if (amountGrams > remaining) {
-    return `Chỉ còn ${remaining}g, không thể ghi nhận hư hỏng ${amountGrams}g.`;
-  }
-
-  // Trừ kho và ghi nhật ký phải đi cùng nhau — nếu tách rời, một lần lỗi giữa
-  // chừng sẽ để lại kho bị trừ mà không có dòng nào giải thích vì sao.
-  await prisma.$transaction([
-    prisma.dailyMenuEntry.update({
-      where: { id: entry.id },
-      data: { spoiledGrams: { increment: amountGrams } },
-    }),
-    prisma.inventoryLoss.create({
-      data: {
-        productId,
-        date,
-        amountGrams,
-        reason,
-        note: note?.trim() || null,
-      },
-    }),
-  ]);
-
+// Kho đổi thì cả trang quản trị lẫn trang chủ đều phải làm mới — trang chủ
+// đọc thẳng tồn kho để ẩn loại đã hết, khách thấy ngay chứ không chờ deploy.
+function revalidateAll() {
   revalidatePath("/admin/fridge");
-  revalidatePath("/admin/products");
+  revalidatePath("/admin/menu");
   revalidatePath("/admin");
   revalidatePath("/");
+}
+
+/**
+ * Một thao tác tủ lạnh: nhập thêm, bán tại chỗ, ghi hao hụt, hoặc đếm lại.
+ * Trả về `null` nếu thành công, hoặc chuỗi lỗi tiếng Việt để hiện cho admin.
+ */
+export async function recordFridgeChange(
+  productId: string,
+  actionId: FridgeActionId,
+  amountGrams: number,
+  note?: string
+): Promise<string | null> {
+  const action = FRIDGE_ACTIONS.find((a) => a.id === actionId);
+  if (!action) return "Thao tác không hợp lệ.";
+
+  if (!Number.isFinite(amountGrams) || amountGrams < 0) {
+    return "Số gram phải là số dương.";
+  }
+
+  if (action.kind === "ADJUST") {
+    // "Đếm lại" nhận vào số tồn THẬT vừa đếm được, không phải chênh lệch —
+    // bắt admin tự tính chênh lệch là cách chắc chắn nhất để có số sai.
+    const product = await prisma.product.findUnique({ where: { id: productId } });
+    if (!product) return "Không tìm thấy loại trái cây này.";
+
+    const delta = Math.trunc(amountGrams) - product.stockGrams;
+    if (delta === 0) return "Số vừa đếm đúng bằng số đang có, không cần sửa.";
+
+    const error = await applyStockMovement({
+      productId,
+      kind: "ADJUST",
+      amountGrams: delta,
+      reason: action.reason ?? undefined,
+      note: note?.trim() || `Sửa từ ${product.stockGrams}g thành ${Math.trunc(amountGrams)}g`,
+    });
+    if (error) return error;
+    revalidateAll();
+    return null;
+  }
+
+  if (amountGrams === 0) return "Số gram phải lớn hơn 0.";
+
+  const error = await applyStockMovement({
+    productId,
+    kind: action.kind,
+    amountGrams,
+    reason: action.reason ?? undefined,
+    note,
+  });
+  if (error) return error;
+
+  revalidateAll();
+  return null;
 }

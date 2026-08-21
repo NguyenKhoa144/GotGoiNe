@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { isOptimizableImage } from "@/lib/image-url";
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
 import { getFruitBoxContent, type FruitBoxItem } from "@/data/fruit-box";
@@ -127,6 +128,7 @@ export function FruitBoxSection({ items }: { items: FruitBoxItem[] }) {
                           fill
                           sizes="72px"
                           className="home-fruitbox-item-img"
+                          unoptimized={!isOptimizableImage(item.image)}
                         />
                       ) : (
                         <span aria-hidden="true">{item.emoji}</span>

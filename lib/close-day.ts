@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { vnToday } from "@/lib/date-vn";
+import { addDays, vnToday } from "@/lib/date-vn";
 
 export type CarryResult = {
   carried: number;
@@ -7,19 +7,19 @@ export type CarryResult = {
 };
 
 /**
- * Chuyển hàng còn tồn của ngày bán gần nhất sang thực đơn hôm nay.
+ * Sang ngày mới, bê DANH SÁCH thực đơn của ngày bán gần nhất sang hôm nay.
  *
- * Quy tắc (theo đúng cách quán vận hành):
- * - Còn lại = nhập − đã bán − hư hỏng.
- * - Còn > 0 thì loại đó tiếp tục nằm trong thực đơn hôm nay với định lượng
- *   đúng bằng phần còn lại; số đã bán và hư hỏng bắt đầu lại từ 0.
- * - Còn <= 0 (bán hết hoặc hỏng hết) thì rời thực đơn, admin muốn bán tiếp
- *   phải chủ động thêm lại với lượng nhập mới.
+ * Từ bước 2 trở đi, dòng thực đơn không còn giữ định lượng nữa — tồn kho nằm
+ * ở `Product.stockGrams` và tự chạy dài qua ngày. Nên việc duy nhất còn lại
+ * khi qua ngày là: hôm qua bày bán loại nào thì hôm nay bày tiếp loại đó,
+ * miễn là tủ lạnh còn hàng.
  *
- * Dòng của ngày cũ được giữ nguyên làm lịch sử, không xoá.
+ * - Loại nào admin đã chủ động gỡ khỏi thực đơn thì không có dòng của hôm qua,
+ *   nên tự nhiên không quay lại — đúng ý "gỡ rồi thì thôi".
+ * - Loại nào hết sạch hàng thì không bê sang; nhập hàng lại thì admin tự thêm.
  *
- * Chạy lại nhiều lần không nhân đôi: mỗi loại chỉ upsert đúng một dòng cho
- * hôm nay, và nếu dòng đã tồn tại thì không đụng vào số liệu đang chạy.
+ * Dòng của ngày cũ được giữ nguyên làm lịch sử, không xoá. Chạy lại nhiều lần
+ * không nhân đôi vì mỗi loại chỉ upsert đúng một dòng cho hôm nay.
  */
 export async function carryForwardToToday(): Promise<CarryResult> {
   const today = vnToday();
@@ -33,62 +33,53 @@ export async function carryForwardToToday(): Promise<CarryResult> {
 
   const entries = await prisma.dailyMenuEntry.findMany({
     where: { date: lastDay.date },
+    include: { product: true },
     orderBy: { sortOrder: "asc" },
   });
 
-  const survivors = entries
-    .map((entry) => ({
-      entry,
-      remaining: entry.qtyGrams - entry.soldGrams - entry.spoiledGrams,
-    }))
-    .filter(({ remaining }) => remaining > 0);
-
   let carried = 0;
-  for (const { entry, remaining } of survivors) {
-    const result = await prisma.dailyMenuEntry.upsert({
+  for (const entry of entries) {
+    if (entry.product.stockGrams <= 0) continue;
+
+    const existing = await prisma.dailyMenuEntry.findUnique({
       where: { productId_date: { productId: entry.productId, date: today } },
-      update: {},
-      create: {
+    });
+    if (existing) continue;
+
+    await prisma.dailyMenuEntry.create({
+      data: {
         productId: entry.productId,
         date: today,
         priceToday: entry.priceToday,
-        qtyGrams: remaining,
+        qtyGrams: entry.product.stockGrams,
         sortOrder: entry.sortOrder,
       },
     });
-    // upsert luôn trả về bản ghi; đếm những dòng thực sự vừa được tạo cho
-    // hôm nay bằng cách so định lượng với phần còn lại chuyển sang.
-    if (result.qtyGrams === remaining && result.soldGrams === 0) carried += 1;
+    carried += 1;
   }
 
   return { carried, from: lastDay.date };
 }
 
 /**
- * Ngày bán gần nhất chưa được chuyển tiếp sang hôm nay — dùng để cảnh báo
- * trong trang quản trị khi cron lỡ không chạy (nếu không, hôm sau thực đơn
- * trống và khách vào trang chủ không thấy gì).
+ * Thực đơn hôm nay có phải vừa được bê nguyên từ hôm qua sang không — dùng để
+ * nhắc admin xem lại menu đầu ngày thay vì cứ để nguyên như hôm trước.
  */
-export async function getPendingCarryDate(): Promise<Date | null> {
+export async function wasCarriedFromYesterday(): Promise<boolean> {
   const today = vnToday();
+  const yesterday = addDays(today, -1);
 
-  const todayCount = await prisma.dailyMenuEntry.count({ where: { date: today } });
-  if (todayCount > 0) return null;
+  const [todayCount, yesterdayCount] = await Promise.all([
+    prisma.dailyMenuEntry.count({ where: { date: today } }),
+    prisma.dailyMenuEntry.count({ where: { date: yesterday } }),
+  ]);
+  if (todayCount === 0 || yesterdayCount === 0) return false;
 
-  const lastDay = await prisma.dailyMenuEntry.findFirst({
-    where: { date: { lt: today } },
-    orderBy: { date: "desc" },
-    select: { date: true },
+  // Nếu chưa có dòng nào của hôm nay được tạo sau nửa đêm bởi thao tác tay thì
+  // coi như menu vẫn y nguyên bản bê sang.
+  const touchedToday = await prisma.dailyMenuEntry.count({
+    where: { date: today, createdAt: { gt: today } },
   });
-  if (!lastDay) return null;
 
-  const leftovers = await prisma.dailyMenuEntry.findMany({
-    where: { date: lastDay.date },
-    select: { qtyGrams: true, soldGrams: true, spoiledGrams: true },
-  });
-  const hasLeftover = leftovers.some(
-    (e) => e.qtyGrams - e.soldGrams - e.spoiledGrams > 0
-  );
-
-  return hasLeftover ? lastDay.date : null;
+  return touchedToday === 0;
 }

@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
 import type { Product } from "@/data/home";
+import { isOptimizableImage } from "@/lib/image-url";
 
 type ProductsSectionProps = {
   activeCategory: string;
@@ -36,13 +38,23 @@ export function ProductsSection({
               >
                 <div>
                   {product.badge ? <div className="home-p-badge">{product.badge}</div> : null}
-                  <span className="home-p-emoji">{product.emoji}</span>
+                  {product.imageUrl ? (
+                    <span className="home-p-photo">
+                      <Image
+                        src={product.imageUrl}
+                        alt=""
+                        fill
+                        sizes="(max-width: 700px) 45vw, 260px"
+                        unoptimized={!isOptimizableImage(product.imageUrl)}
+                      />
+                    </span>
+                  ) : (
+                    <span className="home-p-emoji">{product.emoji}</span>
+                  )}
                   <div className="home-p-name">{product.name}</div>
-                  <div className="home-p-weight">{product.weight}</div>
                   {product.description ? <p className="home-p-desc">{product.description}</p> : null}
                 </div>
                 <div className="home-p-footer">
-                  <span className="home-p-price">{product.price}</span>
                   <button
                     className={`home-p-add${flash === product.id ? " home-is-done" : ""}`}
                     onClick={() => onAdd(product.id)}

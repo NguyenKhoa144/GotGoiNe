@@ -633,6 +633,29 @@ input:focus-visible {
   font-size: 80px;
 }
 
+/* Ảnh thật thay cho emoji. Khung vuông cố định để thẻ nào cũng cùng chiều
+   cao, dù ảnh gốc tỷ lệ ra sao — ảnh đã được cắt vuông lúc tải lên, khung
+   này chỉ để phòng những ảnh cũ dán bằng link ngoài. */
+.home-p-photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 190px;
+  margin: 0 auto 14px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: rgba(30, 92, 46, 0.06);
+}
+
+.home-featured .home-p-photo {
+  max-width: 260px;
+}
+
+.home-p-photo img {
+  object-fit: cover;
+}
+
 .home-p-name {
   font-weight: 800;
   font-size: 16px;
@@ -646,9 +669,11 @@ input:focus-visible {
   margin-bottom: 18px;
 }
 
+/* Từ 2026-08-21 thẻ không còn hiện giá của từng loại trái (giá tính theo cỡ
+   hộp), nên chân thẻ chỉ còn nút thêm — đẩy sang phải cho cân. */
 .home-p-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
 }
 

@@ -93,12 +93,14 @@ function swatchFor(id: string): string {
  * đang có, không chọn nhầm loại đã hết hoặc chưa từng bán.
  */
 export function fruitBoxItemsFromProducts(
-  products: { id: string; emoji: string; name: string }[]
+  products: { id: string; emoji: string; name: string; imageUrl?: string }[]
 ): FruitBoxItem[] {
   return products.map((product) => ({
     id: product.id,
     emoji: product.emoji,
+    // Màu nền chỉ còn thấy khi loại đó chưa có ảnh thật.
     color: swatchFor(product.id),
+    image: product.imageUrl,
     name: product.name,
     // Giá từng phần chưa dùng tới trong giao diện hiện tại (nút đặt hộp mới
     // chỉ hiện thông báo "sắp ra mắt"); để 0 cho tới khi tính năng đặt thật.

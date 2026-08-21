@@ -943,3 +943,258 @@ Những chỗ mất thời gian, ghi lại để lần sau không vấp lại:
 
 - **Chưa đặt `CRON_SECRET` trên Vercel** — endpoint chốt ngày đang trả HTTP 500 kèm thông báo thiếu cấu hình. Phải đặt trước khi cron chạy lần đầu, nếu không thực đơn sáng hôm sau phải chuyển tay.
 - Cột `Product.unit` còn trong cơ sở dữ liệu nhưng không còn dùng — xoá bằng migration khi chắc chắn không cần.
+
+## 2026-08-21 - Bước 1/7: đổi tên tab "Sản phẩm" thành "Daily menu"
+
+### Cập nhật
+
+- `app/admin/products/` đổi tên thư mục thành `app/admin/menu/` (dùng `git mv` để giữ lịch sử file).
+- Cập nhật mọi tham chiếu `/admin/products` → `/admin/menu`: `app/admin/layout.tsx`, `app/admin/page.tsx`, `app/admin/menu/[id]/edit/page.tsx`, `app/admin/fridge/actions.ts`, `app/api/cron/close-day/route.ts`, và 5 component trong `components/admin/`.
+- Đổi nhãn hiển thị "Sản phẩm" → "Daily menu" ở thanh điều hướng quản trị và ở thẻ điều hướng trong trang Tổng quan.
+- Chưa đụng vào schema, logic hay giao diện bên trong trang — thuần đổi tên.
+
+### Thuật ngữ
+
+- **Route**: đường dẫn URL của một trang; trong Next.js App Router, tên thư mục trong `app/` chính là đường dẫn.
+- **`revalidatePath`**: lệnh bảo Next.js làm mới bộ nhớ đệm của một đường dẫn. Đổi tên thư mục mà quên sửa lệnh này thì trang cũ vẫn được làm mới, còn trang mới thì không — dữ liệu hiển thị sẽ cũ mà không báo lỗi.
+
+### Công dụng
+
+- Tên tab khớp với vai trò thật của trang trong thiết kế mới: nơi chọn lọc thực đơn mỗi ngày, không phải nơi quản lý danh mục sản phẩm chung chung.
+- Tách riêng bước đổi tên khỏi bước đổi kiến trúc, để nếu bước sau có sai thì vẫn phân biệt được lỗi do đâu.
+
+### Lợi ích
+
+- Bước nhỏ, không rủi ro dữ liệu, quay đầu chỉ bằng một lệnh `git revert`.
+- Dọn sẵn đường dẫn trước khi viết lại nội dung trang ở bước 4.
+
+### Rủi ro
+
+- Ai đã lưu bookmark `/admin/products` sẽ gặp lỗi 404 (không có redirect). Chấp nhận được vì chỉ một người dùng khu vực quản trị.
+- Đổi tên thư mục làm typegen của Next.js 16 trở nên lỗi thời.
+
+### Quản trị rủi ro
+
+- Đã đổi toàn bộ tham chiếu bằng tìm kiếm toàn dự án (`grep -rn "admin/products"`), kiểm tra lại sau khi đổi thấy không còn kết quả nào.
+
+### Hướng phát triển
+
+- Bước 2: tách định lượng ra khỏi `DailyMenuEntry`, đưa về `Product.stockGrams` làm tồn kho chạy dài, thêm bảng nhật ký biến động kho.
+
+### Kiểm chứng
+
+- `npm run verify` lần đầu báo `Cannot find module '../../app/admin/products/[id]/edit/page.js'` trong `.next/types/validator.ts` — đúng cái bẫy typegen cũ đã ghi ở mục 2026-07-09. Xoá `.next` và `tsconfig.tsbuildinfo` rồi chạy lại: lint → typecheck → build đều xanh, danh sách route in ra đã là `/admin/menu` và `/admin/menu/[id]/edit`.
+
+## 2026-08-21 - Bước 2/7: tách tồn kho ra khỏi thực đơn theo ngày
+
+### Cập nhật
+
+- `prisma/schema.prisma`: thêm `Product.stockGrams` (mặc định 0) và model mới `StockMovement` (`productId`, `date`, `kind`, `amountGrams`, `deltaGrams`, `reason`, `note`). Migration `20260821072723_add_stock_and_movements`.
+- **Chỉ thêm, không xoá.** `DailyMenuEntry.qtyGrams/soldGrams/spoiledGrams/priceToday` và bảng `InventoryLoss` vẫn còn nguyên, code cũ vẫn chạy y như trước.
+- `prisma/backup.mjs`: sao lưu toàn bộ 4 bảng ra `backups/neon-<timestamp>.json`. Thư mục `backups/` đã thêm vào `.gitignore`.
+- `prisma/backfill-stock.mjs`: nạp `stockGrams` = phần còn lại của dòng thực đơn mới nhất mỗi loại, sinh dòng `IMPORT` tương ứng, và chép `InventoryLoss` cũ sang `StockMovement` kind `LOSS`.
+- `lib/stock.ts` (mới): `applyStockMovement` và `applyStockMovements` — cửa ngõ duy nhất để thay đổi tồn kho.
+
+### Thuật ngữ
+
+- **Expand / migrate / contract**: cách đổi cấu trúc database an toàn theo ba nhịp — *mở rộng* (thêm cột mới, giữ cột cũ), *chuyển* (đổi từng nơi dùng sang cột mới), *thu hẹp* (xoá cột cũ khi không còn ai dùng). Bước 2 này mới là nhịp đầu, nên không có lúc nào hệ thống bị gãy.
+- **Transaction**: nhóm nhiều lệnh ghi database thành một khối "được ăn cả, ngã về không". Nửa chừng lỗi thì mọi thứ quay lại như cũ.
+- **Backfill**: nạp dữ liệu cho cột vừa thêm, dựa trên dữ liệu cũ đã có.
+- **`deltaGrams`**: chênh lệch thực tế đã áp vào kho (dương = cộng, âm = trừ). `amountGrams` luôn dương, hướng nằm ở `kind` — nhờ vậy cộng thống kê không phải nhớ quy ước dấu riêng cho từng loại.
+
+### Công dụng
+
+- Tồn kho thôi bị gắn vào *ngày*, chuyển sang gắn vào *trái cây*. Đây là chỗ sai gốc sinh ra cron "chốt ngày": trước đây mỗi sáng phải bê số tồn sang dòng mới, giờ số tồn tự nó chạy dài.
+- Quy tắc "hết hàng thì tự tắt khỏi menu" rút gọn còn một phép so sánh `stockGrams > 0`, không cần job nền nào.
+- `StockMovement` cho phép truy ngược: tồn kho sai thì dò được đúng thao tác nào gây ra.
+
+### Lợi ích
+
+- `Product.stockGrams` luôn bằng tổng `deltaGrams` của các dòng nhật ký — có thể viết script đối chiếu bất cứ lúc nào.
+- `applyStockMovements` kiểm tra đủ hàng cho *tất cả* các loại trước khi ghi, nên chốt một hộp nhiều loại mà thiếu một loại thì cả đơn không chốt, không có chuyện trừ được nửa chừng rồi kẹt.
+- Chặn tồn kho âm ngay tại cửa ngõ.
+
+### Rủi ro
+
+- Local dev và production dùng chung một database Neon, nên migration này chạm thẳng dữ liệu đang chạy thật.
+- Cron `/api/cron/close-day` **vẫn đang chạy theo mô hình cũ**. Đêm nay lúc 00:00 nó vẫn sinh dòng thực đơn mới với `qtyGrams` kiểu cũ, không biết gì về `stockGrams` — hai con số sẽ lệch nhau cho tới khi bước 4 viết lại nó.
+- Hiện có hai nơi ghi hao hụt (`InventoryLoss` qua `reportSpoilage`, và `StockMovement` qua `lib/stock.ts`). Cho tới bước 3, ghi hư hỏng ở tab Tủ lạnh **chỉ trừ `spoiledGrams` cũ, không trừ `stockGrams`**.
+
+### Quản trị rủi ro
+
+- Đã sao lưu đầy đủ trước khi migrate: `backups/neon-2026-08-21T07-25-46-364Z.json` (4 Product · 4 DailyMenuEntry · 1 InventoryLoss · 0 User).
+- Đã in bảng đối chiếu số liệu chuyển đổi và được duyệt trước khi ghi vào database.
+- `backfill-stock.mjs` chạy lại nhiều lần không nhân đôi (xoá sạch `StockMovement` trước khi ghi).
+- Hai rủi ro lệch số ở trên đều được đóng lại ở bước 3 và 4, và dữ liệu hiện tại gần như là dữ liệu thử nên lệch cũng không mất mát gì thật.
+
+### Hướng phát triển
+
+- Bước 3: viết lại tab Tủ lạnh trên nền `lib/stock.ts` — nhập hàng, trừ hao hụt (Thảo ăn, hư/dập), nhật ký biến động.
+- Bước 4: `DailyMenuEntry` rút gọn còn "hôm nay bày bán loại nào", cron đổi thành chỉ bê danh sách (không bê định lượng).
+- Nhịp *contract*: xoá `qtyGrams/soldGrams/spoiledGrams/priceToday` và bảng `InventoryLoss` sau khi bước 3–5 xong.
+
+### Kiểm chứng
+
+- `npx prisma migrate dev` áp migration thành công, Prisma Client sinh lại sạch.
+- `backfill-stock.mjs` in ra đúng số đã duyệt: Xoài cát Hòa Lộc 0g (đã ghi hỏng hết 1000g), ba loại còn lại mỗi loại 1000g; 4 dòng `StockMovement`.
+- `npm run verify` xanh cả ba chặng lint → typecheck → build.
+
+## 2026-08-21 - Bước 3/7: viết lại tab Tủ lạnh trên nền lib/stock.ts
+
+### Cập nhật
+
+- `app/admin/fridge/constants.ts`: thay `SPOILAGE_REASONS` bằng `FRIDGE_ACTIONS` — một danh sách thao tác duy nhất gồm Nhập thêm hàng · Bán tại chỗ · Thảo ăn · Hư/dập · Hết hạn · Lý do khác · Đếm lại sửa tồn thành.
+- `app/admin/fridge/actions.ts`: `reportSpoilage` được thay bằng `recordFridgeChange`, gọi xuống `applyStockMovement`.
+- `components/admin/fridge-row.tsx` (mới) thay cho `components/admin/spoilage-form.tsx` (đã xoá).
+- `app/admin/fridge/page.tsx`: liệt kê **toàn bộ** trái cây theo `Product.stockGrams` (trước đây chỉ liệt kê loại có trong thực đơn hôm nay), thêm nhãn trạng thái Khách đang thấy / Chưa lên menu / Hết hàng, và nhật ký đọc từ `StockMovement`.
+- `lib/products.ts`: điều kiện lọc đổi từ `qtyGrams − soldGrams − spoiledGrams > 0` sang `product.stockGrams > 0`.
+
+### Thuật ngữ
+
+- **Server Action**: hàm chạy trên máy chủ nhưng gọi được thẳng từ nút bấm trong trình duyệt, không cần tự viết API.
+- **`revalidatePath`**: bảo Next.js vứt bộ nhớ đệm của một đường dẫn để lần vào sau đọc lại dữ liệu mới.
+- **Thao tác "Đếm lại"**: admin nhập số gram *thật sự* vừa đếm được trong tủ, máy tự tính chênh lệch rồi ghi một dòng `ADJUST`. Bắt admin tự tính chênh lệch là cách chắc chắn nhất để có số sai.
+
+### Công dụng
+
+- Tủ lạnh từ chỗ chỉ là màn hình *xem* đã thành nơi **nhập liệu thật**: cộng hàng vào, trừ hàng ra, mỗi lần đều có lý do.
+- Danh sách không còn phụ thuộc vào thực đơn hôm nay, nên mua hàng về là nhập được ngay, chưa cần đưa lên menu.
+- Đóng lại lỗ hổng số 2 của bước 2: trang chủ giờ đọc thẳng tồn kho, nên "hết ổi thì ổi biến mất khỏi trang khách" đã chạy thật.
+
+### Lợi ích
+
+- Không nơi nào ghi thẳng vào `stockGrams`; mọi thay đổi đều qua `lib/stock.ts` nên luôn có dòng nhật ký giải thích.
+- Có "Đếm lại" nên admin không bao giờ phải sửa trần database khi số trên máy lệch số thật.
+- Tỷ lệ hao hụt tính trên *lượng nhập trong tuần* chứ không trên lượng nhập một ngày — mẫu số trung thực hơn.
+
+### Rủi ro
+
+- `DailyMenuEntry.soldGrams/spoiledGrams` giờ **không còn ai ghi vào nữa**, nhưng vẫn còn được đọc ở `app/admin/page.tsx` (thẻ "Đã bán hôm nay") và `lib/stats.ts`. Hai chỗ này sẽ đứng im ở số cũ cho tới khi chuyển sang đọc `StockMovement`.
+- Cron `/api/cron/close-day` vẫn chạy theo mô hình cũ (rủi ro còn nguyên từ bước 2), sẽ xử lý ở bước 4.
+- Bảng `InventoryLoss` không còn được ghi vào; dữ liệu cũ đã chép sang `StockMovement` ở bước 2.
+
+### Quản trị rủi ro
+
+- Chỉ thay phần ghi, chưa xoá cột nào — số cũ vẫn nằm nguyên trong database nếu cần đối chiếu.
+- `applyStockMovement` chặn tồn kho âm, nên gõ nhầm số lớn sẽ bị từ chối kèm thông báo rõ còn bao nhiêu.
+- Thao tác "Lý do khác" bắt buộc phải ghi rõ lý do mới cho ghi nhận.
+
+### Hướng phát triển
+
+- Bước 4: viết lại Daily menu (thêm trái cây + ảnh, kéo thả vào menu), rút gọn `DailyMenuEntry`, đổi cron thành chỉ bê danh sách.
+
+### Kiểm chứng
+
+- `npm run verify` xanh cả ba chặng.
+- Mở trang chủ thật ở `localhost:3000`: **Xoài cát Hòa Lộc biến mất khỏi cả lưới sản phẩm lẫn phần ghép hộp**, đúng như mong đợi vì `stockGrams = 0`; ba loại còn hàng vẫn hiện. Đây là bằng chứng quy tắc `stockGrams > 0` chạy thật, không chỉ biên dịch được.
+- Lưu ý vận hành: xoá `.next` trong lúc dev server đang chạy làm hỏng cache Turbopack của tiến trình đó — trang trả `Internal Server Error` cho tới khi khởi động lại server. Đúng cái bẫy đã ghi ở mục 2026-07-09, đã dính lại lần nữa ở bước 1.
+
+### Điều chỉnh sau khi dùng thử (cùng ngày)
+
+- Bốn thẻ KPI bày sẵn và mục "Nhật ký kho" dài được gộp vào **một nút "📊 Thống kê"** bật/tắt (`components/admin/fridge-stats.tsx`), có hai chế độ xem: **Hôm nay** và **7 ngày qua**.
+- Chỉ còn một dòng số liệu luôn hiện: tổng đang có trong tủ và số loại còn hàng.
+- Lý do: việc chính ở tab Tủ lạnh là *nhập liệu*. Bày số liệu thường trực làm rối mắt và đẩy danh sách trái cây xuống dưới màn hình. Số liệu chỉ cần khi muốn xem.
+- Lọc theo ngày làm ở phía trình duyệt bằng cách so sánh chuỗi `"2026-08-21"` thay vì so `Date` — đổi qua lại giữa hai chế độ xem không phải gọi lại máy chủ, và không có chỗ nào để múi giờ chen vào làm lệch ngày.
+
+## 2026-08-21 - Bước 4/7: viết lại Daily menu, thêm ảnh và kéo thả
+
+### Cập nhật
+
+- `lib/upload.ts` (mới): tải ảnh lên Vercel Blob, có `isBlobConfigured()` để giao diện tự biết đã bật kho ảnh hay chưa. Cài thêm gói `@vercel/blob`.
+- `next.config.ts`: khai báo `images.remotePatterns` cho `*.public.blob.vercel-storage.com`.
+- `components/admin/product-image-field.tsx` (mới): ô chọn ảnh dùng chung cho form thêm và form sửa, có xem trước.
+- `components/admin/catalog-panel.tsx`: đổi tiêu đề thành "Trái cây tổng", hiện ảnh thật, hiện tồn kho ngay trên thẻ, và thẻ **kéo được**.
+- `components/admin/menu-panel.tsx`: viết lại hoàn toàn. Bỏ hết ô giá / nhập / đã bán; giờ chỉ còn tên, mô tả và trạng thái tồn kho. Là **vùng thả** để nhận thẻ kéo từ bên trái, và kéo đổi thứ tự ngay trong bảng.
+- `app/admin/menu/actions.ts`: `createProduct`/`updateProduct` nhận ảnh; thêm `reorderTodayMenu`; bỏ `updateMenuEntry` và `moveMenuEntry`.
+- `lib/close-day.ts`: `carryForwardToToday` giờ chỉ bê **danh sách**, không bê định lượng. `getPendingCarryDate` được thay bằng `wasCarriedFromYesterday`.
+- `app/admin/page.tsx`: các thẻ số liệu đọc từ `StockMovement` và `Product.stockGrams` thay cho các cột cũ.
+- Đã xoá: `carry-action.ts`, `carry-forward-banner.tsx`.
+
+### Thuật ngữ
+
+- **Vercel Blob**: kho file riêng của Vercel. Phải dùng nó vì máy chủ Vercel có ổ đĩa **chỉ đọc** — file ghi vào `public/` lúc chạy sẽ biến mất ở lần deploy kế tiếp.
+- **`dataTransfer`**: túi dữ liệu trình duyệt mang theo trong lúc kéo thả. Đặt một định dạng riêng (`application/x-gotgoine-product`) để bảng thực đơn không nhận nhầm thứ kéo từ nơi khác vào.
+- **`remotePatterns`**: danh sách tên miền mà Next.js cho phép `<Image>` tải ảnh về. Mặc định chặn hết để website không bị lợi dụng làm máy chủ trung chuyển ảnh.
+
+### Công dụng
+
+- Daily menu giờ đúng vai trò anh mô tả: bên trái là cơ sở dữ liệu trái cây tổng (thêm mới kèm **tên, mô tả, ảnh**), bên phải là thực đơn hôm nay, chuyển qua lại bằng kéo thả.
+- Bảng thực đơn không còn ô định lượng nào — định lượng đã về hẳn tủ lạnh, không còn hai nơi cùng giữ một con số.
+- Mỗi dòng thực đơn hiện thẳng tồn kho: còn hàng thì "Còn 1500g", hết thì "Hết hàng · khách không thấy". Nhìn là biết khách đang thấy gì.
+
+### Lợi ích
+
+- Tính năng ảnh **dùng được ngay** dù chưa dựng Blob: chưa có token thì ô tải file bị khoá và admin dán link ảnh, có token rồi thì tải file chạy luôn, không phải sửa code.
+- `reorderTodayMenu` nhận nguyên mảng id theo thứ tự mới thay vì "đổi chỗ hai dòng liền kề" — kéo một dòng từ cuối lên đầu chỉ tốn một lần gọi máy chủ.
+- Chốt ngày đơn giản hẳn: không còn phép tính tồn nào, chỉ là "hôm qua bày loại nào, còn hàng thì hôm nay bày tiếp".
+
+### Rủi ro
+
+- **Chưa bật Vercel Blob** nên tải file lên chưa chạy được; hiện chỉ dán link ảnh. Cần tạo Blob store trên Vercel rồi thêm `BLOB_READ_WRITE_TOKEN`.
+- Ảnh xem trước trong form và ảnh trong bảng quản trị dùng `<img>` thường thay vì `<Image>` (đã tắt cảnh báo eslint tại chỗ) — vì link ảnh dán vào có thể thuộc tên miền bất kỳ chưa khai báo. Ảnh hiển thị cho khách vẫn đi qua `<Image>`.
+- Kéo thả bằng HTML5 **không hoạt động trên màn hình cảm ứng**. Vì vậy nút "+ Thêm" và nút "×" vẫn được giữ nguyên làm đường đi thay thế, không bỏ.
+- `DailyMenuEntry.priceToday/qtyGrams/soldGrams/spoiledGrams` vẫn còn trong database và vẫn được ghi giá trị khi thêm dòng mới (vì đang là cột bắt buộc), nhưng **không còn ai đọc để ra quyết định**. Sẽ xoá ở nhịp thu hẹp.
+- `lib/stats.ts` (tab Thống kê) vẫn đọc các cột cũ nên số liệu ở đó đứng im.
+
+### Quản trị rủi ro
+
+- Ô dán link ảnh kiểm tra phải bắt đầu bằng `http://` hoặc `https://` mới nhận.
+- Tải file giới hạn 4MB và chỉ nhận JPG/PNG/WEBP/AVIF.
+- `addRandomSuffix` khi tải lên, để hai lần tải trùng tên file không đè lên nhau — ảnh cũ có thể vẫn đang được dùng ở chỗ khác.
+- Thanh thông báo "Thực đơn này đang y nguyên từ hôm qua" nhắc admin xem lại menu đầu ngày, đúng yêu cầu "vẫn phải cập nhật menu mỗi ngày".
+
+### Hướng phát triển
+
+- Bước 5: trang chủ hiển thị ảnh thật + tên + mô tả, bỏ giá từng loại (giá tính theo cỡ hộp).
+- Bước 6: tab Báo giá — chọn cỡ hộp, chọn trái, máy chia gram đều, chốt đơn thì trừ kho qua `applyStockMovements`.
+
+### Kiểm chứng
+
+- `npm run verify` xanh cả ba chặng.
+
+### Bổ sung: nén ảnh ở phía trình duyệt (`lib/compress-image.ts`)
+
+- Ảnh được thu nhỏ về tối đa 1200px, **cắt vuông từ giữa**, nén thành JPEG chất lượng 0.82 **ngay trên máy admin**, trước khi gửi đi. Kết quả điển hình: 4MB → ~150KB.
+- File đã nén được **đặt ngược vào chính ô `<input type="file">`** bằng `DataTransfer`, nên form vẫn gửi như bình thường, không cần thêm ô ẩn nào, và ảnh xem trước đúng là ảnh sẽ được lưu.
+- Chạy chung một đường cho mọi nguồn ảnh — iPhone, máy Mac, ảnh tải từ mạng — không phân biệt thiết bị.
+
+**Vì sao đáng làm:** ảnh chỉ hiển thị trong ô vuông cỡ 150px; tải lên 4MB để hiện ở 150px là lãng phí hàng chục lần. Ngoài ra máy chủ Vercel chỉ nhận request tối đa 4.5MB — ảnh iPhone 12MP thường 3–5MB, tức là đụng trần. Nén trước ở máy khách xoá luôn cả hai vấn đề, đồng thời tự thoát bẫy HEIC (canvas luôn xuất ra JPEG).
+
+**Rủi ro và cách xử lý:**
+- Cắt vuông từ giữa có thể cắt mất trái cây nằm lệch góc → hiện ô xem trước ngay sau khi chọn để admin thấy và đổi ảnh khác. Công cụ kéo khung cắt bằng tay để dành làm sau.
+- Chrome/Firefox trên máy tính **không giải mã được HEIC** → bắt lỗi rồi trả về file gốc kèm thông báo hướng dẫn, thay vì chặn im lặng.
+- Ảnh PNG nền trong suốt khi xuất sang JPEG sẽ ra nền đen → đã tô nền trắng trước khi vẽ.
+- Ảnh vốn đã rất nhỏ mà nén xong lại to hơn → giữ nguyên bản gốc.
+
+## 2026-08-21 - Bước 5/7: trang khách hiển thị ảnh thật, bỏ giá từng loại
+
+### Cập nhật
+
+- `data/home.ts`: kiểu `Product` thêm `imageUrl`.
+- `lib/products.ts`: `getTodayMenu` trả kèm `imageUrl`.
+- `data/fruit-box.ts`: `fruitBoxItemsFromProducts` truyền ảnh xuống phần ghép hộp (trường `image` vốn đã có sẵn nhưng chưa ai truyền vào).
+- `components/home/products-section.tsx`: có ảnh thì hiện ảnh trong khung vuông, không có thì giữ emoji như cũ. **Bỏ hẳn `home-p-price` và `home-p-weight`.**
+- `app/home.css`: thêm `.home-p-photo` (khung vuông, `object-fit: cover`); `.home-p-footer` đổi sang `justify-content: flex-end` vì chân thẻ giờ chỉ còn nút thêm.
+- `lib/image-url.ts` (mới): quyết định ảnh nào đi qua bộ tối ưu của Next, ảnh nào không.
+
+### Thuật ngữ
+
+- **`next/image` + `remotePatterns`**: Next.js chỉ tối ưu ảnh từ tên miền đã khai báo, để website không bị người ngoài lợi dụng làm máy chủ trung chuyển ảnh.
+- **`unoptimized`**: bảo `<Image>` tải thẳng ảnh, bỏ qua bộ tối ưu — và bỏ qua luôn việc kiểm tra tên miền.
+
+### Công dụng
+
+- Khách nhìn thấy đúng ba thứ anh yêu cầu: **ảnh · tên · mô tả**. Không còn giá lẻ từng loại, vì giá bán tính theo cỡ hộp.
+- Ảnh admin tải lên ở tab Daily menu tự hiện ở cả hai chỗ trang khách, không phải tải lên hai lần.
+
+### Rủi ro
+
+- **Lỗi đã phát hiện và sửa ngay trong bước này:** admin được phép dán link ảnh bất kỳ, nhưng `next/image` chỉ chấp nhận tên miền đã khai báo → ảnh dán link sẽ hỏng im lặng, chỉ hiện ô trống. Đã sửa bằng `lib/image-url.ts`: ảnh trong kho Blob (hoặc trong `public/`) thì tối ưu bình thường, ảnh ngoài thì đặt `unoptimized`. Đổi lại ảnh ngoài không được thu nhỏ tự động — chấp nhận được vì đó chỉ là đường tạm trong lúc chưa bật Blob.
+- **Hiện khách không thấy giá ở bất kỳ đâu.** Thẻ trái cây đã bỏ giá, mà cỡ hộp thì chưa gắn giá. Khoảng trống này đóng lại ở bước 6.
+- `EN_PRODUCTS` (tiếng Anh, tĩnh) vẫn còn trường `price` nhưng không còn được hiển thị.
+
+### Kiểm chứng
+
+- `npm run verify` xanh.
+- Gán tạm một ảnh thật cho "Xoài cát Hòa Lộc" rồi kiểm tra HTML máy chủ trả về: có `home-p-photo` kèm thẻ `<img>`, `home-p-price` và `home-p-weight` đều **0 lần xuất hiện**. Bộ tối ưu ảnh `/_next/image` trả `HTTP 200 · image/jpeg · 35965 byte`. Đã gỡ ảnh thử và xoá script sau khi kiểm tra.
+- Lưu ý công cụ: khung xem trước trong Claude Code báo `window.innerWidth = 0` và `getBoundingClientRect` cho số đo sai (thẻ 110px, ảnh 52px) khi pane đang ẩn — cùng họ với lỗi `document.hidden` đã ghi trước đây. **Đừng tin số đo bố cục lấy từ pane đang ẩn**; dùng `curl` vào HTML và kiểm tra CSS trực tiếp thì chắc chắn hơn.

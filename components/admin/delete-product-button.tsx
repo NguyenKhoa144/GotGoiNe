@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { deleteProduct } from "@/app/admin/products/actions";
+import { deleteProduct } from "@/app/admin/menu/actions";
 
 export function DeleteProductButton({ id, name }: { id: string; name: string }) {
   const router = useRouter();
@@ -19,7 +19,7 @@ export function DeleteProductButton({ id, name }: { id: string; name: string }) 
 
     startTransition(async () => {
       await deleteProduct(id);
-      router.push("/admin/products");
+      router.push("/admin/menu");
     });
   };
 

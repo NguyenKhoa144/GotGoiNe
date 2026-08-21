@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const result = await carryForwardToToday();
 
   revalidatePath("/");
-  revalidatePath("/admin/products");
+  revalidatePath("/admin/menu");
   revalidatePath("/admin/fridge");
   revalidatePath("/admin");
 

@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import {
-  moveMenuEntry,
+  addToTodayMenu,
   removeFromTodayMenu,
-  updateMenuEntry,
-} from "@/app/admin/products/actions";
+  reorderTodayMenu,
+} from "@/app/admin/menu/actions";
+import { DRAG_TYPE } from "./catalog-panel";
 import { formatGrams } from "@/lib/qty";
 
 export type MenuEntryView = {
@@ -14,183 +15,182 @@ export type MenuEntryView = {
   name: string;
   emoji: string;
   category: string;
-  priceToday: number;
-  qtyGrams: number;
-  soldGrams: number;
-  spoiledGrams: number;
+  description: string | null;
+  imageUrl: string | null;
+  stockGrams: number;
 };
-
-function MenuRow({ entry, isFirst, isLast }: { entry: MenuEntryView; isFirst: boolean; isLast: boolean }) {
-  const [price, setPrice] = useState(entry.priceToday);
-  const [qty, setQty] = useState(entry.qtyGrams);
-  const [sold, setSold] = useState(entry.soldGrams);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  const remaining = qty - sold - entry.spoiledGrams;
-
-  const save = (patch: { priceToday?: number; qtyGrams?: number; soldGrams?: number }) => {
-    startTransition(async () => {
-      const result = await updateMenuEntry(entry.id, patch);
-      setError(result ?? null);
-    });
-  };
-
-  const remove = () => {
-    startTransition(async () => {
-      await removeFromTodayMenu(entry.id);
-    });
-  };
-
-  const move = (direction: "up" | "down") => {
-    startTransition(async () => {
-      await moveMenuEntry(entry.id, direction);
-    });
-  };
-
-  const numberInput =
-    "w-full rounded-md border border-neutral-300 px-2 py-1 text-sm outline-none focus:border-[#1e5c2e]";
-
-  return (
-    <div
-      className={`flex flex-wrap items-center gap-2 rounded-[10px] border px-2.5 py-2 ${
-        error ? "border-red-300 bg-red-50" : "border-neutral-200"
-      } ${pending ? "opacity-60" : ""}`}
-    >
-      <div className="flex flex-col">
-        <button
-          type="button"
-          onClick={() => move("up")}
-          disabled={isFirst || pending}
-          aria-label="Chuyển lên trên"
-          className="px-1 text-[10px] leading-tight text-neutral-500 hover:text-[#1e5c2e] disabled:opacity-30"
-        >
-          ▲
-        </button>
-        <button
-          type="button"
-          onClick={() => move("down")}
-          disabled={isLast || pending}
-          aria-label="Chuyển xuống dưới"
-          className="px-1 text-[10px] leading-tight text-neutral-500 hover:text-[#1e5c2e] disabled:opacity-30"
-        >
-          ▼
-        </button>
-      </div>
-
-      <div className="flex h-[42px] w-[42px] items-center justify-center rounded-lg bg-[#f0f9e1] text-2xl">
-        {entry.emoji}
-      </div>
-
-      <div className="min-w-[120px] flex-1">
-        <div className="text-sm font-bold text-[#152b1a]">{entry.name}</div>
-        <div className="text-[11px] text-neutral-500">{entry.category}</div>
-      </div>
-
-      <label className="w-[110px] text-[11px] font-semibold text-neutral-600">
-        Giá bán (₫)
-        <input
-          type="number"
-          min={0}
-          value={price}
-          onChange={(e) => setPrice(Number(e.target.value))}
-          onBlur={() => price !== entry.priceToday && save({ priceToday: price })}
-          className={numberInput}
-        />
-      </label>
-
-      <label className="w-[100px] text-[11px] font-semibold text-neutral-600">
-        Nhập (g)
-        <input
-          type="number"
-          min={0}
-          value={qty}
-          onChange={(e) => setQty(Number(e.target.value))}
-          onBlur={() => qty !== entry.qtyGrams && save({ qtyGrams: qty })}
-          className={numberInput}
-        />
-      </label>
-
-      <label className="w-[100px] text-[11px] font-semibold text-neutral-600">
-        Đã bán (g)
-        <input
-          type="number"
-          min={0}
-          value={sold}
-          onChange={(e) => setSold(Number(e.target.value))}
-          onBlur={() => sold !== entry.soldGrams && save({ soldGrams: sold })}
-          className={numberInput}
-        />
-      </label>
-
-      <div className="w-[92px] text-[11px] font-semibold text-neutral-600">
-        Còn lại
-        <div
-          className={`text-sm font-bold ${remaining > 0 ? "text-[#1e5c2e]" : "text-neutral-400"}`}
-        >
-          {formatGrams(remaining)}
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={remove}
-        disabled={pending}
-        aria-label={`Gỡ ${entry.name} khỏi thực đơn hôm nay`}
-        className="rounded-md px-2 py-1 text-lg leading-none text-neutral-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
-      >
-        ×
-      </button>
-
-      {error ? <p className="w-full text-[11px] font-medium text-red-600">{error}</p> : null}
-    </div>
-  );
-}
 
 type MenuPanelProps = {
   entries: MenuEntryView[];
   todayLabel: string;
+  /** Thực đơn hôm nay được bê nguyên từ hôm qua, admin chưa xem lại. */
+  carriedFromYesterday: boolean;
 };
 
-export function MenuPanel({ entries, todayLabel }: MenuPanelProps) {
-  const soldToday = entries.reduce((sum, e) => sum + e.soldGrams, 0);
+export function MenuPanel({ entries, todayLabel, carriedFromYesterday }: MenuPanelProps) {
+  const [pending, startTransition] = useTransition();
+  // Thứ tự đang hiển thị trong lúc kéo. `null` = dùng đúng thứ tự từ máy chủ.
+  const [order, setOrder] = useState<MenuEntryView[] | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropActive, setDropActive] = useState(false);
+
+  const rows = order ?? entries;
+  const visibleCount = rows.filter((e) => e.stockGrams > 0).length;
+
+  const addProduct = (productId: string) => {
+    startTransition(async () => {
+      await addToTodayMenu(productId);
+    });
+  };
+
+  const remove = (entryId: string) => {
+    startTransition(async () => {
+      await removeFromTodayMenu(entryId);
+    });
+  };
+
+  /** Kéo một thẻ từ bảng "Trái cây tổng" thả vào đây. */
+  const onDropFromCatalog = (e: React.DragEvent) => {
+    setDropActive(false);
+    const productId = e.dataTransfer.getData(DRAG_TYPE);
+    if (!productId) return;
+    e.preventDefault();
+    addProduct(productId);
+  };
+
+  /** Kéo đổi thứ tự trong chính bảng này. */
+  const onRowDragOver = (index: number) => {
+    if (dragIndex === null || dragIndex === index) return;
+    const next = [...rows];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(index, 0, moved);
+    setOrder(next);
+    setDragIndex(index);
+  };
+
+  const commitOrder = () => {
+    setDragIndex(null);
+    if (!order) return;
+    const ids = order.map((e) => e.id);
+    startTransition(async () => {
+      await reorderTodayMenu(ids);
+      // Thả state cục bộ để lần vẽ sau lấy lại thứ tự từ máy chủ — nếu giữ
+      // lại, mọi thay đổi từ máy khác sẽ bị thứ tự cũ trong đầu che mất.
+      setOrder(null);
+    });
+  };
 
   return (
-    <section className="rounded-[14px] border border-neutral-200 bg-white p-5">
+    <section
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes(DRAG_TYPE)) {
+          e.preventDefault();
+          setDropActive(true);
+        }
+      }}
+      onDragLeave={() => setDropActive(false)}
+      onDrop={onDropFromCatalog}
+      className={`rounded-[14px] border bg-white p-5 transition-colors ${
+        dropActive ? "border-[#1e5c2e] bg-[#f6fbf0]" : "border-neutral-200"
+      }`}
+    >
       <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-sm font-bold text-[#152b1a]">Thực đơn hôm nay</h2>
           <p className="text-[11px] text-neutral-500">{todayLabel}</p>
         </div>
         <div className="text-right">
-          <div className="text-[11px] text-neutral-500">Đã bán hôm nay</div>
-          <div className="text-sm font-bold text-[#1e5c2e]">{formatGrams(soldToday)}</div>
+          <div className="text-[11px] text-neutral-500">Khách đang thấy</div>
+          <div className="text-sm font-bold text-[#1e5c2e]">{visibleCount} loại</div>
         </div>
       </div>
 
       <p className="mb-3 text-[11px] text-neutral-500">
-        {entries.length} loại đang bán · hàng còn tồn sẽ tự chuyển sang thực đơn ngày mai
+        {rows.length} loại trong thực đơn · loại nào hết hàng trong tủ lạnh sẽ tự ẩn khỏi trang
+        khách
       </p>
 
-      {entries.length === 0 ? (
-        <div className="rounded-[10px] border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-500">
+      {carriedFromYesterday ? (
+        <div className="mb-3 rounded-[10px] border border-[#f5a800] bg-[#fdf6e0] px-3 py-2 text-[12px] text-[#7a5400]">
+          <strong>Thực đơn này đang y nguyên từ hôm qua.</strong> Xem lại xem hôm nay còn bán
+          đúng những loại này không, gỡ bớt hoặc thêm loại mới nếu cần.
+        </div>
+      ) : null}
+
+      {rows.length === 0 ? (
+        <div
+          className={`rounded-[10px] border border-dashed px-4 py-10 text-center text-sm ${
+            dropActive ? "border-[#1e5c2e] text-[#1e5c2e]" : "border-neutral-300 text-neutral-500"
+          }`}
+        >
           Chưa có trái cây nào trong thực đơn hôm nay.
           <br />
-          Bấm <strong>&quot;+ Thêm&quot;</strong> ở danh sách bên trái để đưa vào bán.
+          Kéo một loại từ bảng bên trái thả vào đây, hoặc bấm <strong>“+ Thêm”</strong>.
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          {entries.map((entry, i) => (
-            // Key gộp cả số liệu máy chủ: khi dữ liệu đổi (do chính mình lưu,
-            // hoặc do máy khác sửa) dòng được dựng lại và ô nhập lấy lại giá
-            // trị mới — tránh phải đồng bộ state bằng useEffect.
-            <MenuRow
-              key={`${entry.id}:${entry.priceToday}:${entry.qtyGrams}:${entry.soldGrams}:${entry.spoiledGrams}`}
-              entry={entry}
-              isFirst={i === 0}
-              isLast={i === entries.length - 1}
-            />
-          ))}
+        <div className={`flex flex-col gap-2 ${pending ? "opacity-60" : ""}`}>
+          {rows.map((entry, index) => {
+            const empty = entry.stockGrams <= 0;
+            return (
+              <div
+                key={entry.id}
+                draggable
+                onDragStart={() => setDragIndex(index)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  onRowDragOver(index);
+                }}
+                onDragEnd={commitOrder}
+                className={`flex cursor-grab items-center gap-3 rounded-[10px] border px-2.5 py-2 active:cursor-grabbing ${
+                  dragIndex === index ? "border-[#1e5c2e] bg-[#f6fbf0]" : "border-neutral-200"
+                }`}
+              >
+                <span className="w-4 shrink-0 text-center text-[11px] text-neutral-400">
+                  {index + 1}
+                </span>
+
+                <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#f0f9e1] text-2xl">
+                  {entry.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={entry.imageUrl}
+                      alt={entry.name}
+                      className={`h-full w-full object-cover ${empty ? "grayscale" : ""}`}
+                    />
+                  ) : (
+                    <span className={empty ? "opacity-35 grayscale" : ""}>{entry.emoji}</span>
+                  )}
+                </div>
+
+                <div className="min-w-[120px] flex-1">
+                  <div className="text-sm font-bold text-[#152b1a]">{entry.name}</div>
+                  <div className="line-clamp-2 text-[11px] leading-tight text-neutral-500">
+                    {entry.description ?? entry.category}
+                  </div>
+                </div>
+
+                {empty ? (
+                  <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-500">
+                    Hết hàng · khách không thấy
+                  </span>
+                ) : (
+                  <span className="shrink-0 rounded-full bg-[#e6f4d8] px-2 py-0.5 text-[11px] font-semibold text-[#1e5c2e]">
+                    Còn {formatGrams(entry.stockGrams)}
+                  </span>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => remove(entry.id)}
+                  disabled={pending}
+                  aria-label={`Gỡ ${entry.name} khỏi thực đơn hôm nay`}
+                  className="rounded-md px-2 py-1 text-lg leading-none text-neutral-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>

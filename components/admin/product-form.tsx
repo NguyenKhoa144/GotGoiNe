@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { ProductImageField } from "./product-image-field";
 
 export type ProductFormValues = {
   category: string;
@@ -11,6 +12,7 @@ export type ProductFormValues = {
   badge?: string;
   description?: string;
   featured: boolean;
+  imageUrl?: string | null;
 };
 
 type ProductFormAction = (
@@ -23,9 +25,16 @@ type ProductFormProps = {
   categories: readonly string[];
   initial: ProductFormValues;
   submitLabel: string;
+  blobEnabled: boolean;
 };
 
-export function ProductForm({ action, categories, initial, submitLabel }: ProductFormProps) {
+export function ProductForm({
+  action,
+  categories,
+  initial,
+  submitLabel,
+  blobEnabled,
+}: ProductFormProps) {
   const [error, formAction, pending] = useActionState(action, undefined);
 
   const field = "rounded-lg border border-neutral-300 px-3 py-2 font-normal outline-none focus:border-[#1e5c2e]";
@@ -57,6 +66,8 @@ export function ProductForm({ action, categories, initial, submitLabel }: Produc
         Tên sản phẩm
         <input name="name" defaultValue={initial.name} className={field} required />
       </label>
+
+      <ProductImageField blobEnabled={blobEnabled} defaultUrl={initial.imageUrl} />
 
       <label className={label}>
         Quy cách (hiển thị cho khách)

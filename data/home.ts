@@ -17,10 +17,17 @@ export type Product = {
   emoji: string;
   name: string;
   weight: string;
+  /**
+   * Giá của RIÊNG loại trái này. Từ 2026-08-21 khách không còn thấy con số
+   * này nữa — giá bán tính theo cỡ hộp, không theo từng loại trái. Giữ lại
+   * cho danh sách tiếng Anh tĩnh (`EN_PRODUCTS`) và cho phần tạo poster.
+   */
   price: string;
   badge?: string;
   featured?: boolean;
   description?: string;
+  /** Ảnh thật admin tải lên. Chưa có thì giao diện dùng `emoji` thay thế. */
+  imageUrl?: string;
 };
 
 export type ProcessStep = {
@@ -269,7 +276,7 @@ export function getHomeContent(lang: Lang): HomeContent {
   return homeContent[lang];
 }
 
-// Danh mục sản phẩm dùng chung cho form quản trị (/admin/products) — lấy từ
+// Danh mục sản phẩm dùng chung cho form quản trị (/admin/menu) — lấy từ
 // bản VI duy nhất vì admin chỉ quản lý nội dung tiếng Việt, tránh khai báo
 // trùng danh sách này ở hai nơi rồi lệch nhau.
 export const PRODUCT_CATEGORIES = homeContent.vi.categories;
