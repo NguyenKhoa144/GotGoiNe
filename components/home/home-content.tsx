@@ -13,11 +13,15 @@ import { MarqueeStrip } from "@/components/home/marquee-strip";
 import { ProductsSection } from "@/components/home/products-section";
 import { WhySection } from "@/components/home/why-section";
 import { getHomeContent, type Product } from "@/data/home";
+import { fruitBoxItemsFromProducts } from "@/data/fruit-box";
 
 function HomeContent({ viProducts }: { viProducts: Product[] }) {
   const { lang } = useLanguage();
   const content = getHomeContent(lang);
   const products = lang === "vi" ? viProducts : content.products;
+  // Phần ghép hộp lấy đúng danh sách đang bán hôm nay, để khách không chọn
+  // được loại quán không có.
+  const fruitBoxItems = fruitBoxItemsFromProducts(products);
 
   // Chọn danh mục theo index thay vì theo chuỗi nhãn — vì nhãn danh mục đổi
   // theo ngôn ngữ, dùng index giữ đúng vị trí đang chọn khi người dùng đổi
@@ -52,7 +56,7 @@ function HomeContent({ viProducts }: { viProducts: Product[] }) {
         flash={flash}
         onAdd={handleAdd}
       />
-      <FruitBoxSection />
+      <FruitBoxSection items={fruitBoxItems} />
       <HowSection steps={content.processSteps} />
       <CtaBanner />
     </main>

@@ -65,3 +65,43 @@ const fruitBoxContent: Record<Lang, FruitBoxContent> = {
 export function getFruitBoxContent(lang: Lang): FruitBoxContent {
   return fruitBoxContent[lang];
 }
+
+// Màu nền khung ảnh, chọn theo id sản phẩm để một loại trái luôn giữ đúng một
+// màu dù thứ tự trong thực đơn thay đổi.
+const SWATCHES = [
+  "#ffd98a",
+  "#ff9e96",
+  "#ffe58a",
+  "#ffc48a",
+  "#ffb0c4",
+  "#d6b3f0",
+  "#c6e6a0",
+  "#ff8a80",
+];
+
+function swatchFor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) % 100000;
+  }
+  return SWATCHES[hash % SWATCHES.length];
+}
+
+/**
+ * Danh sách trái cây cho phần "Tự tay ghép hộp", dựng từ chính thực đơn hôm
+ * nay thay vì danh sách cứng — khách chỉ ghép được những loại quán thật sự
+ * đang có, không chọn nhầm loại đã hết hoặc chưa từng bán.
+ */
+export function fruitBoxItemsFromProducts(
+  products: { id: string; emoji: string; name: string }[]
+): FruitBoxItem[] {
+  return products.map((product) => ({
+    id: product.id,
+    emoji: product.emoji,
+    color: swatchFor(product.id),
+    name: product.name,
+    // Giá từng phần chưa dùng tới trong giao diện hiện tại (nút đặt hộp mới
+    // chỉ hiện thông báo "sắp ra mắt"); để 0 cho tới khi tính năng đặt thật.
+    pricePerPart: 0,
+  }));
+}

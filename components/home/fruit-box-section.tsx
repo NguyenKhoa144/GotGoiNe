@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
-import { getFruitBoxContent } from "@/data/fruit-box";
+import { getFruitBoxContent, type FruitBoxItem } from "@/data/fruit-box";
 
-export function FruitBoxSection() {
+export function FruitBoxSection({ items }: { items: FruitBoxItem[] }) {
   const { lang } = useLanguage();
   const t = homeStrings[lang].fruitBox;
   const content = getFruitBoxContent(lang);
@@ -22,10 +22,7 @@ export function FruitBoxSection() {
   }, [showToast]);
 
   const size = content.sizes.find((s) => s.id === sizeId) ?? content.sizes[0];
-  const totalParts = content.items.reduce(
-    (sum, item) => sum + (qty[item.id] ?? 0),
-    0,
-  );
+  const totalParts = items.reduce((sum, item) => sum + (qty[item.id] ?? 0), 0);
   const isFull = totalParts >= size.capacity;
   const progressPct =
     size.capacity > 0 ? Math.min(100, (totalParts / size.capacity) * 100) : 0;
@@ -102,10 +99,12 @@ export function FruitBoxSection() {
               ))}
             </div>
 
-            <p className="home-fruitbox-hint">{t.pickInstructions}</p>
+            <p className="home-fruitbox-hint">
+              {items.length === 0 ? t.emptyToday : t.pickInstructions}
+            </p>
 
             <div className="home-fruitbox-items">
-              {content.items.map((item) => {
+              {items.map((item) => {
                 const current = qty[item.id] ?? 0;
                 return (
                   <div
