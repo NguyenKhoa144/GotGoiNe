@@ -19,6 +19,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Sản phẩm
           </Link>
           <Link
+            href="/admin/fridge"
+            className="rounded-lg px-3 py-1.5 text-sm font-bold text-[#1E5C2D] hover:bg-[#EAF0E3]"
+          >
+            Tủ lạnh
+          </Link>
+          <Link
             href="/admin/poster"
             className="rounded-lg px-3 py-1.5 text-sm font-bold text-[#1E5C2D] hover:bg-[#EAF0E3]"
           >

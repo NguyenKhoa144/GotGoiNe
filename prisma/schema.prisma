@@ -32,6 +32,49 @@ model Product {
   description String?
   available   Boolean  @default(true)
   sortOrder   Int      @default(0)
+  // Đơn vị gốc của sản phẩm: "kg" quy đổi ra gram khi vào thực đơn ngày,
+  // "quả"/"hộp" giữ nguyên số nguyên đơn vị.
+  unit        String   @default("kg")
+  // Ảnh thật thay cho emoji — thêm sẵn cột để sau này bật upload không phải
+  // migrate lại; hiện chưa dùng, giao diện vẫn hiển thị emoji.
+  imageUrl    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  menuEntries DailyMenuEntry[]
+  losses      InventoryLoss[]
+}
+
+// Một dòng = một loại trái cây trong thực đơn của MỘT ngày. Không ghi đè qua
+// ngày mới: mỗi ngày là một bộ dòng riêng, nhờ vậy giữ được lịch sử bán/hao
+// hụt để tính thống kê về sau.
+model DailyMenuEntry {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // Ngày áp dụng, tính theo lịch Việt Nam (lưu ở UTC midnight của ngày đó).
+  date         DateTime @db.Date
+  // Giá bán của riêng ngày hôm đó, đơn vị đồng (số nguyên, không phải chuỗi
+  // "45.000₫" như Product.price) để cộng ra doanh thu được.
+  priceToday   Int
+  qtyGrams     Int
+  soldGrams    Int      @default(0)
+  spoiledGrams Int      @default(0)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Chốt ngày chạy lại nhiều lần cũng chỉ ghi đè đúng một dòng, không nhân đôi.
+  @@unique([productId, date])
+}
+
+model InventoryLoss {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  amountGrams Int
+  reason      String
+  note        String?
+  createdAt   DateTime @default(now())
 }
