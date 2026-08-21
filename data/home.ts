@@ -35,7 +35,6 @@ type HomeContent = {
   marqueeItems: string[];
   heroStats: HeroStat[];
   whyReasons: WhyReason[];
-  products: Product[];
   processSteps: ProcessStep[];
 };
 
@@ -83,79 +82,6 @@ const homeContent: Record<Lang, HomeContent> = {
         title: "Giá tốt - Tiện lợi",
         description:
           "Tiết kiệm thời gian gọt rửa. Giá hợp lý, phù hợp văn phòng, gia đình và bữa ăn vặt hàng ngày.",
-      },
-    ],
-
-    products: [
-      {
-        id: "p1",
-        category: "🔥 Hộp cắt sẵn",
-        emoji: "🥭",
-        name: "Xoài cát Hòa Lộc",
-        weight: "Hộp 400g · Gọt sẵn · Chín tới",
-        price: "45.000₫",
-        badge: "🔥 Bán chạy #1",
-        featured: true,
-        description:
-          "Xoài cát Hòa Lộc chín vàng, ngọt thơm tự nhiên. Gọt vỏ, thái miếng, đóng hộp ngay trong sáng - không chất bảo quản.",
-      },
-      {
-        id: "p2",
-        category: "🔥 Hộp cắt sẵn",
-        emoji: "🍉",
-        name: "Dưa hấu không hạt",
-        weight: "Hộp 500g · Cắt miếng",
-        price: "28.000₫",
-      },
-      {
-        id: "p3",
-        category: "Nhập khẩu",
-        emoji: "🍈",
-        name: "Dưa lưới Nhật Bản",
-        weight: "Hộp 300g · Cao cấp",
-        price: "65.000₫",
-        badge: "Mới",
-      },
-      {
-        id: "p4",
-        category: "🔥 Hộp cắt sẵn",
-        emoji: "🍍",
-        name: "Dứa mật gọt sẵn",
-        weight: "Hộp 300g · Ngọt tự nhiên",
-        price: "35.000₫",
-      },
-      {
-        id: "p5",
-        category: "Hộp mix",
-        emoji: "🍱",
-        name: "Combo mix 5 loại",
-        weight: "Hộp 600g · Tiết kiệm nhất",
-        price: "89.000₫",
-      },
-      {
-        id: "p6",
-        category: "Hoa quả dầm",
-        emoji: "🥣",
-        name: "Hoa quả dầm sữa chua",
-        weight: "Ly 450g · Mát lạnh · Ít ngọt",
-        price: "39.000₫",
-        badge: "Mới",
-      },
-      {
-        id: "p7",
-        category: "Set ăn vặt",
-        emoji: "🍡",
-        name: "Set trái cây chấm muối",
-        weight: "Hộp 500g · Có muối tôm",
-        price: "55.000₫",
-      },
-      {
-        id: "p8",
-        category: "Hộp quà tặng",
-        emoji: "🎁",
-        name: "Hộp quà trái cây mini",
-        weight: "Set 4 loại · Gói nơ · Thiệp nhỏ",
-        price: "129.000₫",
       },
     ],
 
@@ -233,79 +159,6 @@ const homeContent: Record<Lang, HomeContent> = {
       },
     ],
 
-    products: [
-      {
-        id: "p1",
-        category: "🔥 Ready-cut boxes",
-        emoji: "🥭",
-        name: "Hòa Lộc Mango",
-        weight: "400g box · Pre-cut · Perfectly ripe",
-        price: "45.000₫",
-        badge: "🔥 Best seller #1",
-        featured: true,
-        description:
-          "Ripe golden Hòa Lộc mango, naturally sweet and fragrant. Peeled, sliced, and boxed fresh every morning - no preservatives.",
-      },
-      {
-        id: "p2",
-        category: "🔥 Ready-cut boxes",
-        emoji: "🍉",
-        name: "Seedless Watermelon",
-        weight: "500g box · Cut pieces",
-        price: "28.000₫",
-      },
-      {
-        id: "p3",
-        category: "Imported",
-        emoji: "🍈",
-        name: "Japanese Cantaloupe",
-        weight: "300g box · Premium",
-        price: "65.000₫",
-        badge: "New",
-      },
-      {
-        id: "p4",
-        category: "🔥 Ready-cut boxes",
-        emoji: "🍍",
-        name: "Ready-cut Honey Pineapple",
-        weight: "300g box · Naturally sweet",
-        price: "35.000₫",
-      },
-      {
-        id: "p5",
-        category: "Mix boxes",
-        emoji: "🍱",
-        name: "5-Fruit Mix Combo",
-        weight: "600g box · Best value",
-        price: "89.000₫",
-      },
-      {
-        id: "p6",
-        category: "Mixed fruit cups",
-        emoji: "🥣",
-        name: "Fruit & Yogurt Cup",
-        weight: "450g cup · Chilled · Low sugar",
-        price: "39.000₫",
-        badge: "New",
-      },
-      {
-        id: "p7",
-        category: "Snack sets",
-        emoji: "🍡",
-        name: "Fruit & Salt Dip Set",
-        weight: "500g box · Includes shrimp salt",
-        price: "55.000₫",
-      },
-      {
-        id: "p8",
-        category: "Gift boxes",
-        emoji: "🎁",
-        name: "Mini Fruit Gift Box",
-        weight: "4-fruit set · Ribbon-wrapped · Small card",
-        price: "129.000₫",
-      },
-    ],
-
     processSteps: [
       {
         number: "1",
@@ -334,6 +187,83 @@ const homeContent: Record<Lang, HomeContent> = {
     ],
   },
 };
+
+// Trang chủ bản tiếng Việt lấy sản phẩm từ thực đơn hôm nay trong CSDL (xem
+// lib/products.ts). Bản tiếng Anh chưa được quản lý qua trang quản trị nên
+// vẫn dùng danh sách tĩnh này — đây là bản dịch trưng bày, không phải hàng
+// đang bán thật.
+export const EN_PRODUCTS: Product[] = [
+  {
+    id: "p1",
+    category: "🔥 Ready-cut boxes",
+    emoji: "🥭",
+    name: "Hòa Lộc Mango",
+    weight: "400g box · Pre-cut · Perfectly ripe",
+    price: "45.000₫",
+    badge: "🔥 Best seller #1",
+    featured: true,
+    description:
+      "Ripe golden Hòa Lộc mango, naturally sweet and fragrant. Peeled, sliced, and boxed fresh every morning - no preservatives.",
+  },
+  {
+    id: "p2",
+    category: "🔥 Ready-cut boxes",
+    emoji: "🍉",
+    name: "Seedless Watermelon",
+    weight: "500g box · Cut pieces",
+    price: "28.000₫",
+  },
+  {
+    id: "p3",
+    category: "Imported",
+    emoji: "🍈",
+    name: "Japanese Cantaloupe",
+    weight: "300g box · Premium",
+    price: "65.000₫",
+    badge: "New",
+  },
+  {
+    id: "p4",
+    category: "🔥 Ready-cut boxes",
+    emoji: "🍍",
+    name: "Ready-cut Honey Pineapple",
+    weight: "300g box · Naturally sweet",
+    price: "35.000₫",
+  },
+  {
+    id: "p5",
+    category: "Mix boxes",
+    emoji: "🍱",
+    name: "5-Fruit Mix Combo",
+    weight: "600g box · Best value",
+    price: "89.000₫",
+  },
+  {
+    id: "p6",
+    category: "Mixed fruit cups",
+    emoji: "🥣",
+    name: "Fruit & Yogurt Cup",
+    weight: "450g cup · Chilled · Low sugar",
+    price: "39.000₫",
+    badge: "New",
+  },
+  {
+    id: "p7",
+    category: "Snack sets",
+    emoji: "🍡",
+    name: "Fruit & Salt Dip Set",
+    weight: "500g box · Includes shrimp salt",
+    price: "55.000₫",
+  },
+  {
+    id: "p8",
+    category: "Gift boxes",
+    emoji: "🎁",
+    name: "Mini Fruit Gift Box",
+    weight: "4-fruit set · Ribbon-wrapped · Small card",
+    price: "129.000₫",
+  },
+];
 
 export function getHomeContent(lang: Lang): HomeContent {
   return homeContent[lang];

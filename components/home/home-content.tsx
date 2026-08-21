@@ -12,13 +12,13 @@ import { HowSection } from "@/components/home/how-section";
 import { MarqueeStrip } from "@/components/home/marquee-strip";
 import { ProductsSection } from "@/components/home/products-section";
 import { WhySection } from "@/components/home/why-section";
-import { getHomeContent, type Product } from "@/data/home";
+import { EN_PRODUCTS, getHomeContent, type Product } from "@/data/home";
 import { fruitBoxItemsFromProducts } from "@/data/fruit-box";
 
 function HomeContent({ viProducts }: { viProducts: Product[] }) {
   const { lang } = useLanguage();
   const content = getHomeContent(lang);
-  const products = lang === "vi" ? viProducts : content.products;
+  const products = lang === "vi" ? viProducts : EN_PRODUCTS;
   // Phần ghép hộp lấy đúng danh sách đang bán hôm nay, để khách không chọn
   // được loại quán không có.
   const fruitBoxItems = fruitBoxItemsFromProducts(products);
