@@ -188,6 +188,7 @@ input:focus-visible {
 }
 
 .home-nav-cats {
+  position: relative;
   display: flex;
   justify-content: center;
   gap: 10px;
@@ -197,7 +198,19 @@ input:focus-visible {
   margin: 0 auto;
 }
 
+.home-cat-indicator {
+  position: absolute;
+  border-radius: var(--r-pill);
+  background: var(--green-dark);
+  transition: left 320ms cubic-bezier(0.22, 1, 0.36, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+  pointer-events: none;
+}
+
 .home-cat-pill {
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
   padding: 9px 20px;
   border-radius: var(--r-pill);
@@ -207,12 +220,13 @@ input:focus-visible {
   border: 1.5px solid var(--border);
   background: white;
   color: var(--text-muted);
+  transition: color 220ms ease, border-color 220ms ease, transform 150ms ease;
 }
 
 .home-cat-pill.home-active {
-  background: var(--green-dark);
+  background: transparent;
   color: white;
-  border-color: var(--green-dark);
+  border-color: transparent;
 }
 
 .home-cat-pill:hover {

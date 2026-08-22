@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Lock } from "lucide-react";
@@ -15,6 +16,32 @@ type HeaderProps = {
 export function Header({ categories, activeCategoryIndex, onCategoryChange }: HeaderProps) {
   const { lang, setLang } = useLanguage();
   const t = homeStrings[lang].header;
+
+  const navRef = useRef<HTMLElement>(null);
+  const pillRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [indicator, setIndicator] = useState({ left: 0, top: 0, width: 0, height: 0 });
+
+  // Đo lại vị trí pill đang chọn để khung nền trượt mượt qua lại giữa các
+  // nút thay vì tô màu bật/tắt riêng lẻ trên từng nút.
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    const activePill = pillRefs.current[activeCategoryIndex];
+    if (!nav || !activePill) return;
+
+    const measure = () => {
+      setIndicator({
+        left: activePill.offsetLeft,
+        top: activePill.offsetTop,
+        width: activePill.offsetWidth,
+        height: activePill.offsetHeight,
+      });
+    };
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [activeCategoryIndex, categories]);
 
   return (
     <header className="home-site-header">
@@ -60,10 +87,23 @@ export function Header({ categories, activeCategoryIndex, onCategoryChange }: He
         </div>
       </div>
 
-      <nav className="home-nav-cats">
+      <nav className="home-nav-cats" ref={navRef}>
+        <span
+          className="home-cat-indicator"
+          style={{
+            left: `${indicator.left}px`,
+            top: `${indicator.top}px`,
+            width: `${indicator.width}px`,
+            height: `${indicator.height}px`,
+          }}
+          aria-hidden="true"
+        />
         {categories.map((cat, index) => (
           <button
             key={cat}
+            ref={(el) => {
+              pillRefs.current[index] = el;
+            }}
             className={`home-cat-pill${activeCategoryIndex === index ? " home-active" : ""}`}
             onClick={() => onCategoryChange(index)}
             aria-pressed={activeCategoryIndex === index}

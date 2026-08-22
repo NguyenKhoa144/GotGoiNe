@@ -47,7 +47,7 @@ type HomeContent = {
 
 const homeContent: Record<Lang, HomeContent> = {
   vi: {
-    categories: ["🔥 Hộp cắt sẵn", "Hoa quả dầm", "Hộp mix", "Set ăn vặt", "Hộp quà tặng", "Nhập khẩu"],
+    categories: ["🔥 Hộp cắt sẵn", "Box quà tặng nhà gọt", "Thức chấm nhà gọt", "Order"],
 
     marqueeItems: [
       "🍎 Táo Queen New Zealand Mt ERIN",
@@ -121,7 +121,7 @@ const homeContent: Record<Lang, HomeContent> = {
   },
 
   en: {
-    categories: ["🔥 Ready-cut boxes", "Mixed fruit cups", "Mix boxes", "Snack sets", "Gift boxes", "Imported"],
+    categories: ["🔥 Ready-cut boxes", "Gift boxes by Gọt Gòi", "Dipping treats by Gọt Gòi", "Order"],
 
     marqueeItems: [
       "🍎 New Zealand Queen Apple Mt ERIN",
@@ -222,7 +222,7 @@ export const EN_PRODUCTS: Product[] = [
   },
   {
     id: "p3",
-    category: "Imported",
+    category: "Order",
     emoji: "🍈",
     name: "Japanese Cantaloupe",
     weight: "300g box · Premium",
@@ -238,25 +238,8 @@ export const EN_PRODUCTS: Product[] = [
     price: "35.000₫",
   },
   {
-    id: "p5",
-    category: "Mix boxes",
-    emoji: "🍱",
-    name: "5-Fruit Mix Combo",
-    weight: "600g box · Best value",
-    price: "89.000₫",
-  },
-  {
-    id: "p6",
-    category: "Mixed fruit cups",
-    emoji: "🥣",
-    name: "Fruit & Yogurt Cup",
-    weight: "450g cup · Chilled · Low sugar",
-    price: "39.000₫",
-    badge: "New",
-  },
-  {
     id: "p7",
-    category: "Snack sets",
+    category: "Dipping treats by Gọt Gòi",
     emoji: "🍡",
     name: "Fruit & Salt Dip Set",
     weight: "500g box · Includes shrimp salt",
@@ -264,7 +247,7 @@ export const EN_PRODUCTS: Product[] = [
   },
   {
     id: "p8",
-    category: "Gift boxes",
+    category: "Gift boxes by Gọt Gòi",
     emoji: "🎁",
     name: "Mini Fruit Gift Box",
     weight: "4-fruit set · Ribbon-wrapped · Small card",
