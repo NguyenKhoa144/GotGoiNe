@@ -3,8 +3,10 @@ import type { Lang } from "@/lib/language-context";
 export type FruitBoxSize = {
   id: string;
   label: string;
-  capacity: number;
-  fee: number;
+  // Trọng lượng thực tế của hộp, chỉ để hiển thị cho khách biết — không
+  // dùng để giới hạn số loại/số lượng trái được chọn. Phần chia theo từng
+  // loại trái và giá bán do admin xử lý sau khi lên đơn.
+  weightLabel: string;
 };
 
 export type FruitBoxItem = {
@@ -15,7 +17,6 @@ export type FruitBoxItem = {
   color: string;
   image?: string;
   name: string;
-  pricePerPart: number;
 };
 
 type FruitBoxContent = {
@@ -23,41 +24,39 @@ type FruitBoxContent = {
   items: FruitBoxItem[];
 };
 
-// Giá tạm để demo giao diện — chưa phải giá bán thật, cần chỉnh lại
-// trước khi tính năng đặt hộp thật được bật (xem docs/refactor-notes.md).
 const fruitBoxContent: Record<Lang, FruitBoxContent> = {
   vi: {
     sizes: [
-      { id: "small", label: "Hộp nhỏ", capacity: 3, fee: 10000 },
-      { id: "medium", label: "Hộp vừa", capacity: 5, fee: 15000 },
-      { id: "large", label: "Hộp lớn", capacity: 8, fee: 20000 },
+      { id: "small", label: "Hộp nhỏ", weightLabel: "500g" },
+      { id: "medium", label: "Hộp vừa", weightLabel: "700g" },
+      { id: "large", label: "Hộp lớn", weightLabel: "1000g" },
     ],
     items: [
-      { id: "xoai", emoji: "🥭", color: "#ffd98a", name: "Xoài", pricePerPart: 25000 },
-      { id: "dua-hau", emoji: "🍉", color: "#ff9e96", name: "Dưa hấu", pricePerPart: 18000 },
-      { id: "dua", emoji: "🍍", color: "#ffe58a", name: "Dứa", pricePerPart: 20000 },
-      { id: "cam", emoji: "🍊", color: "#ffc48a", name: "Cam", pricePerPart: 20000 },
-      { id: "dau-tay", emoji: "🍓", color: "#ffb0c4", name: "Dâu tây", pricePerPart: 35000 },
-      { id: "nho", emoji: "🍇", color: "#d6b3f0", name: "Nho", pricePerPart: 30000 },
-      { id: "kiwi", emoji: "🥝", color: "#c6e6a0", name: "Kiwi", pricePerPart: 28000 },
-      { id: "tao", emoji: "🍎", color: "#ff8a80", name: "Táo", pricePerPart: 22000 },
+      { id: "xoai", emoji: "🥭", color: "#ffd98a", name: "Xoài" },
+      { id: "dua-hau", emoji: "🍉", color: "#ff9e96", name: "Dưa hấu" },
+      { id: "dua", emoji: "🍍", color: "#ffe58a", name: "Dứa" },
+      { id: "cam", emoji: "🍊", color: "#ffc48a", name: "Cam" },
+      { id: "dau-tay", emoji: "🍓", color: "#ffb0c4", name: "Dâu tây" },
+      { id: "nho", emoji: "🍇", color: "#d6b3f0", name: "Nho" },
+      { id: "kiwi", emoji: "🥝", color: "#c6e6a0", name: "Kiwi" },
+      { id: "tao", emoji: "🍎", color: "#ff8a80", name: "Táo" },
     ],
   },
   en: {
     sizes: [
-      { id: "small", label: "Small box", capacity: 3, fee: 10000 },
-      { id: "medium", label: "Medium box", capacity: 5, fee: 15000 },
-      { id: "large", label: "Large box", capacity: 8, fee: 20000 },
+      { id: "small", label: "Small box", weightLabel: "500g" },
+      { id: "medium", label: "Medium box", weightLabel: "700g" },
+      { id: "large", label: "Large box", weightLabel: "1000g" },
     ],
     items: [
-      { id: "xoai", emoji: "🥭", color: "#ffd98a", name: "Mango", pricePerPart: 25000 },
-      { id: "dua-hau", emoji: "🍉", color: "#ff9e96", name: "Watermelon", pricePerPart: 18000 },
-      { id: "dua", emoji: "🍍", color: "#ffe58a", name: "Pineapple", pricePerPart: 20000 },
-      { id: "cam", emoji: "🍊", color: "#ffc48a", name: "Orange", pricePerPart: 20000 },
-      { id: "dau-tay", emoji: "🍓", color: "#ffb0c4", name: "Strawberry", pricePerPart: 35000 },
-      { id: "nho", emoji: "🍇", color: "#d6b3f0", name: "Grapes", pricePerPart: 30000 },
-      { id: "kiwi", emoji: "🥝", color: "#c6e6a0", name: "Kiwi", pricePerPart: 28000 },
-      { id: "tao", emoji: "🍎", color: "#ff8a80", name: "Apple", pricePerPart: 22000 },
+      { id: "xoai", emoji: "🥭", color: "#ffd98a", name: "Mango" },
+      { id: "dua-hau", emoji: "🍉", color: "#ff9e96", name: "Watermelon" },
+      { id: "dua", emoji: "🍍", color: "#ffe58a", name: "Pineapple" },
+      { id: "cam", emoji: "🍊", color: "#ffc48a", name: "Orange" },
+      { id: "dau-tay", emoji: "🍓", color: "#ffb0c4", name: "Strawberry" },
+      { id: "nho", emoji: "🍇", color: "#d6b3f0", name: "Grapes" },
+      { id: "kiwi", emoji: "🥝", color: "#c6e6a0", name: "Kiwi" },
+      { id: "tao", emoji: "🍎", color: "#ff8a80", name: "Apple" },
     ],
   },
 };
@@ -88,9 +87,10 @@ function swatchFor(id: string): string {
 }
 
 /**
- * Danh sách trái cây cho phần "Tự tay ghép hộp", dựng từ chính thực đơn hôm
- * nay thay vì danh sách cứng — khách chỉ ghép được những loại quán thật sự
- * đang có, không chọn nhầm loại đã hết hoặc chưa từng bán.
+ * Danh sách trái cây để ghép hộp, dựng từ chính thực đơn hôm nay (đã lọc
+ * theo danh mục "Hộp cắt sẵn") thay vì danh sách cứng — khách chỉ ghép được
+ * những loại quả thật sự đang có, không chọn nhầm loại đã hết hoặc chưa
+ * từng bán.
  */
 export function fruitBoxItemsFromProducts(
   products: { id: string; emoji: string; name: string; imageUrl?: string }[]
@@ -102,8 +102,5 @@ export function fruitBoxItemsFromProducts(
     color: swatchFor(product.id),
     image: product.imageUrl,
     name: product.name,
-    // Giá từng phần chưa dùng tới trong giao diện hiện tại (nút đặt hộp mới
-    // chỉ hiện thông báo "sắp ra mắt"); để 0 cho tới khi tính năng đặt thật.
-    pricePerPart: 0,
   }));
 }

@@ -19,9 +19,6 @@ function HomeContent({ viProducts }: { viProducts: Product[] }) {
   const { lang } = useLanguage();
   const content = getHomeContent(lang);
   const products = lang === "vi" ? viProducts : EN_PRODUCTS;
-  // Phần ghép hộp lấy đúng danh sách đang bán hôm nay, để khách không chọn
-  // được loại quán không có.
-  const fruitBoxItems = fruitBoxItemsFromProducts(products);
 
   // Chọn danh mục theo index thay vì theo chuỗi nhãn — vì nhãn danh mục đổi
   // theo ngôn ngữ, dùng index giữ đúng vị trí đang chọn khi người dùng đổi
@@ -31,6 +28,11 @@ function HomeContent({ viProducts }: { viProducts: Product[] }) {
   const [flash, setFlash] = useState<string | null>(null);
   const activeCategory = content.categories[activeCategoryIndex];
   const visibleProducts = products.filter((product) => product.category === activeCategory);
+  // Danh mục đầu tiên ("Hộp cắt sẵn") là menu hằng ngày ghép theo trái cây
+  // rời, thay vì các SKU đóng gói cố định như những danh mục còn lại — nên
+  // dùng giao diện chọn trái cây thay cho lưới sản phẩm.
+  const isBuildYourOwnCategory = activeCategoryIndex === 0;
+  const fruitBoxItems = fruitBoxItemsFromProducts(visibleProducts);
 
   const handleAdd = (key: string) => {
     setFlash(key);
@@ -50,13 +52,16 @@ function HomeContent({ viProducts }: { viProducts: Product[] }) {
       <Hero stats={content.heroStats} flash={flash} onAdd={handleAdd} />
       <MarqueeStrip items={content.marqueeItems} />
       <WhySection reasons={content.whyReasons} />
-      <ProductsSection
-        activeCategory={activeCategory}
-        products={visibleProducts}
-        flash={flash}
-        onAdd={handleAdd}
-      />
-      <FruitBoxSection items={fruitBoxItems} />
+      {isBuildYourOwnCategory ? (
+        <FruitBoxSection activeCategory={activeCategory} items={fruitBoxItems} />
+      ) : (
+        <ProductsSection
+          activeCategory={activeCategory}
+          products={visibleProducts}
+          flash={flash}
+          onAdd={handleAdd}
+        />
+      )}
       <HowSection steps={content.processSteps} />
       <CtaBanner />
     </main>

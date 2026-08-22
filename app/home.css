@@ -916,21 +916,6 @@ input:focus-visible {
   box-shadow: var(--shadow-lg);
 }
 
-.home-fruitbox-progress {
-  height: 8px;
-  border-radius: var(--r-pill);
-  background: var(--bg-muted);
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-
-.home-fruitbox-progress-bar {
-  height: 100%;
-  background: var(--accent);
-  border-radius: var(--r-pill);
-  transition: width 220ms ease;
-}
-
 .home-fruitbox-stats {
   display: flex;
   flex-direction: column;
@@ -964,12 +949,6 @@ input:focus-visible {
 .home-fruitbox-stat-solo .home-fruitbox-stat-value {
   font-size: 28px;
   color: var(--green-dark);
-}
-
-.home-fruitbox-warning {
-  font-size: 13px;
-  color: #b34700;
-  margin: 0 0 14px;
 }
 
 .home-fruitbox-cta {

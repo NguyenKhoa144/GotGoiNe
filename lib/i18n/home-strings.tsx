@@ -34,19 +34,12 @@ type HomeStrings = {
     addAriaPrefix: string;
   };
   fruitBox: {
-    eyebrow: string;
-    titleLine1: string;
-    titleLine2: string;
     subtitle: string;
     pickInstructions: string;
-    capacityPrefix: string;
-    partsUnit: string;
-    perPartSuffix: string;
     decreaseAriaPrefix: string;
     increaseAriaPrefix: string;
-    partsSelectedLabel: string;
-    totalLabel: string;
-    fullWarning: string;
+    selectedTypesLabel: string;
+    selectedTypesUnit: string;
     ctaButton: string;
     comingSoonTitle: string;
     comingSoonDesc: string;
@@ -114,19 +107,12 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       addAriaPrefix: "Thêm ",
     },
     fruitBox: {
-      eyebrow: "🧺 Tự chọn hộp",
-      titleLine1: "Tự tay ghép",
-      titleLine2: "hộp trái cây của riêng bạn",
-      subtitle: "Chọn size hộp, thêm bớt từng loại trái theo khẩu vị - giá cập nhật ngay khi bạn chọn.",
+      subtitle: "Chọn thoải mái các loại trái theo khẩu vị - phần ăn được chia đều và báo giá theo cỡ hộp bạn chọn.",
       pickInstructions: "Chạm vào từng loại trái để thêm vào hộp",
-      capacityPrefix: "Tối đa",
-      partsUnit: "phần",
-      perPartSuffix: "/ phần",
       decreaseAriaPrefix: "Bớt ",
       increaseAriaPrefix: "Thêm ",
-      partsSelectedLabel: "Phần đã chọn",
-      totalLabel: "Tổng tiền",
-      fullWarning: "Hộp đã đầy, bớt bớt lại trái khác nha.",
+      selectedTypesLabel: "Đã chọn",
+      selectedTypesUnit: "loại quả",
       ctaButton: "Đặt hộp này",
       comingSoonTitle: "Sắp ra mắt!",
       comingSoonDesc: "Tính năng đặt hộp tự chọn đang được hoàn thiện - theo dõi Gọt Gòi Nè để là người đặt đầu tiên nhé.",
@@ -192,19 +178,12 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       addAriaPrefix: "Add ",
     },
     fruitBox: {
-      eyebrow: "🧺 Build your own",
-      titleLine1: "Build your own",
-      titleLine2: "fruit box, your way",
-      subtitle: "Pick a box size, add or remove each fruit to taste - the price updates as you go.",
+      subtitle: "Pick as many fruits as you like - portions are split evenly and priced by the box size you choose.",
       pickInstructions: "Tap each fruit to add it to your box",
-      capacityPrefix: "Up to",
-      partsUnit: "parts",
-      perPartSuffix: "/ part",
       decreaseAriaPrefix: "Remove ",
       increaseAriaPrefix: "Add ",
-      partsSelectedLabel: "Parts selected",
-      totalLabel: "Total",
-      fullWarning: "Box is full - remove something to add more.",
+      selectedTypesLabel: "Selected",
+      selectedTypesUnit: "fruit types",
       ctaButton: "Order this box",
       comingSoonTitle: "Coming soon!",
       comingSoonDesc: "The build-your-own box feature is still in the works - follow Gọt Gòi Nè to be first in line.",

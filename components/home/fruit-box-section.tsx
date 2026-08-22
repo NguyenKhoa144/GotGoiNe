@@ -7,9 +7,15 @@ import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
 import { getFruitBoxContent, type FruitBoxItem } from "@/data/fruit-box";
 
-export function FruitBoxSection({ items }: { items: FruitBoxItem[] }) {
+type FruitBoxSectionProps = {
+  activeCategory: string;
+  items: FruitBoxItem[];
+};
+
+export function FruitBoxSection({ activeCategory, items }: FruitBoxSectionProps) {
   const { lang } = useLanguage();
   const t = homeStrings[lang].fruitBox;
+  const tProducts = homeStrings[lang].products;
   const content = getFruitBoxContent(lang);
 
   const [sizeId, setSizeId] = useState(content.sizes[0].id);
@@ -23,55 +29,22 @@ export function FruitBoxSection({ items }: { items: FruitBoxItem[] }) {
   }, [showToast]);
 
   const size = content.sizes.find((s) => s.id === sizeId) ?? content.sizes[0];
-  const totalParts = items.reduce((sum, item) => sum + (qty[item.id] ?? 0), 0);
-  const isFull = totalParts >= size.capacity;
-  const progressPct =
-    size.capacity > 0 ? Math.min(100, (totalParts / size.capacity) * 100) : 0;
-
-  // Đổi size nhỏ hơn khi đang chọn nhiều phần hơn sức chứa mới — bớt dần từ
-  // phần cuối cùng còn số lượng > 0 cho tới khi vừa sức chứa.
-  const handleSizeChange = (nextId: string) => {
-    const nextSize = content.sizes.find((s) => s.id === nextId);
-    if (!nextSize) return;
-    setSizeId(nextId);
-    setQty((prev) => {
-      let parts = Object.values(prev).reduce((sum, n) => sum + n, 0);
-      if (parts <= nextSize.capacity) return prev;
-      const next = { ...prev };
-      const keys = Object.keys(next);
-      let i = keys.length - 1;
-      while (parts > nextSize.capacity && i >= 0) {
-        const key = keys[i];
-        if (next[key] > 0) {
-          next[key]--;
-          parts--;
-        } else {
-          i--;
-        }
-      }
-      return next;
-    });
-  };
+  const selectedTypes = Object.values(qty).filter((n) => n > 0).length;
 
   const changeQty = (itemId: string, delta: number) => {
     setQty((prev) => {
       const current = prev[itemId] ?? 0;
       const next = current + delta;
       if (next < 0) return prev;
-      if (delta > 0 && totalParts >= size.capacity) return prev;
       return { ...prev, [itemId]: next };
     });
   };
 
   return (
-    <section className="home-fruitbox-section" id="tu-chon-hop">
+    <section className="home-fruitbox-section" id="menu">
       <div className="home-container">
-        <div className="home-section-eyebrow">{t.eyebrow}</div>
-        <h2 className="home-section-title">
-          {t.titleLine1}
-          <br />
-          {t.titleLine2}
-        </h2>
+        <div className="home-section-eyebrow">{tProducts.eyebrow}</div>
+        <h2 className="home-section-title">{activeCategory}</h2>
         <p className="home-section-sub">{t.subtitle}</p>
 
         <div className="home-fruitbox-panel">
@@ -82,7 +55,7 @@ export function FruitBoxSection({ items }: { items: FruitBoxItem[] }) {
                   key={s.id}
                   type="button"
                   className={`home-fruitbox-size${s.id === sizeId ? " home-active" : ""}`}
-                  onClick={() => handleSizeChange(s.id)}
+                  onClick={() => setSizeId(s.id)}
                   aria-pressed={s.id === sizeId}
                 >
                   <span
@@ -93,9 +66,7 @@ export function FruitBoxSection({ items }: { items: FruitBoxItem[] }) {
                     📦
                   </span>
                   <span className="home-fruitbox-size-name">{s.label}</span>
-                  <span className="home-fruitbox-size-meta">
-                    {t.capacityPrefix} {s.capacity} {t.partsUnit}
-                  </span>
+                  <span className="home-fruitbox-size-meta">{s.weightLabel}</span>
                 </button>
               ))}
             </div>
@@ -150,7 +121,6 @@ export function FruitBoxSection({ items }: { items: FruitBoxItem[] }) {
                         type="button"
                         className="home-fruitbox-step"
                         onClick={() => changeQty(item.id, 1)}
-                        disabled={isFull}
                         aria-label={`${t.increaseAriaPrefix}${item.name}`}
                       >
                         ＋
@@ -163,27 +133,14 @@ export function FruitBoxSection({ items }: { items: FruitBoxItem[] }) {
           </div>
 
           <div className="home-fruitbox-summary">
-            <div className="home-fruitbox-progress">
-              <div
-                className="home-fruitbox-progress-bar"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-
             <div className="home-fruitbox-stats">
               <div className="home-fruitbox-stat home-fruitbox-stat-solo">
-                <span className="home-fruitbox-stat-label">
-                  {t.partsSelectedLabel}
-                </span>
+                <span className="home-fruitbox-stat-label">{t.selectedTypesLabel}</span>
                 <span className="home-fruitbox-stat-value">
-                  {totalParts}/{size.capacity}
+                  {selectedTypes} {t.selectedTypesUnit}
                 </span>
               </div>
             </div>
-
-            {isFull ? (
-              <p className="home-fruitbox-warning">{t.fullWarning}</p>
-            ) : null}
 
             <button
               type="button"
