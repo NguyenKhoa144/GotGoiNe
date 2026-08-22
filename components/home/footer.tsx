@@ -39,6 +39,9 @@ export function Footer() {
           <p className="home-footer-address">
             <span>{t.addressLabel}:</span> Đường 30/4, phường Phú Lợi, thành phố Cần Thơ
           </p>
+          <p className="home-footer-address">
+            <span>{t.hotlineLabel}:</span> <span className="home-footer-tbd">—</span>
+          </p>
           <div className="home-footer-social">
             {SOCIAL_LINKS.map((social) => (
               <a

@@ -1335,6 +1335,11 @@ input:focus-visible {
   font-weight: 700;
 }
 
+.home-footer-address .home-footer-tbd {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
+}
+
 .home-footer-social {
   display: flex;
   gap: 10px;

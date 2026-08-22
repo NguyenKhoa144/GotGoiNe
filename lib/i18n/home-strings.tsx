@@ -66,6 +66,7 @@ type HomeStrings = {
   footer: {
     tagline: string;
     addressLabel: string;
+    hotlineLabel: string;
     navHeading: string;
     navHome: string;
     navMenu: string;
@@ -152,6 +153,7 @@ export const homeStrings: Record<Lang, HomeStrings> = {
     footer: {
       tagline: "Trái cây tươi, gọt sẵn - giao tận nơi tại Cần Thơ.",
       addressLabel: "Địa chỉ",
+      hotlineLabel: "Hotline",
       navHeading: "Khám phá",
       navHome: "Trang chủ",
       navMenu: "Menu hôm nay",
@@ -236,6 +238,7 @@ export const homeStrings: Record<Lang, HomeStrings> = {
     footer: {
       tagline: "Fresh, pre-cut fruit - delivered around Cần Thơ.",
       addressLabel: "Address",
+      hotlineLabel: "Hotline",
       navHeading: "Explore",
       navHome: "Home",
       navMenu: "Today's menu",
