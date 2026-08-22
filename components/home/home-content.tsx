@@ -5,6 +5,7 @@ import { trackAddToCart } from "@/lib/analytics";
 import { LanguageProvider, useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
 import { CtaBanner } from "@/components/home/cta-banner";
+import { Footer } from "@/components/home/footer";
 import { FruitBoxSection } from "@/components/home/fruit-box-section";
 import { Header } from "@/components/home/header";
 import { Hero } from "@/components/home/hero";
@@ -43,28 +44,31 @@ function HomeContent({ viProducts }: { viProducts: Product[] }) {
   };
 
   return (
-    <main id="top">
-      <Header
-        categories={content.categories}
-        activeCategoryIndex={activeCategoryIndex}
-        onCategoryChange={setActiveCategoryIndex}
-      />
-      <Hero stats={content.heroStats} flash={flash} onAdd={handleAdd} />
-      <MarqueeStrip items={content.marqueeItems} />
-      <WhySection reasons={content.whyReasons} />
-      {isBuildYourOwnCategory ? (
-        <FruitBoxSection activeCategory={activeCategory} items={fruitBoxItems} />
-      ) : (
-        <ProductsSection
-          activeCategory={activeCategory}
-          products={visibleProducts}
-          flash={flash}
-          onAdd={handleAdd}
+    <>
+      <main id="top">
+        <Header
+          categories={content.categories}
+          activeCategoryIndex={activeCategoryIndex}
+          onCategoryChange={setActiveCategoryIndex}
         />
-      )}
-      <HowSection steps={content.processSteps} />
-      <CtaBanner />
-    </main>
+        <Hero stats={content.heroStats} flash={flash} onAdd={handleAdd} />
+        <MarqueeStrip items={content.marqueeItems} />
+        <WhySection reasons={content.whyReasons} />
+        {isBuildYourOwnCategory ? (
+          <FruitBoxSection activeCategory={activeCategory} items={fruitBoxItems} />
+        ) : (
+          <ProductsSection
+            activeCategory={activeCategory}
+            products={visibleProducts}
+            flash={flash}
+            onAdd={handleAdd}
+          />
+        )}
+        <HowSection steps={content.processSteps} />
+        <CtaBanner />
+      </main>
+      <Footer />
+    </>
   );
 }
 

@@ -63,6 +63,19 @@ type HomeStrings = {
     subtext: string;
     button: string;
   };
+  footer: {
+    tagline: string;
+    addressLabel: string;
+    navHeading: string;
+    navHome: string;
+    navMenu: string;
+    navProcess: string;
+    navWhy: string;
+    navOrder: string;
+    connectHeading: string;
+    rights: string;
+    credit: string;
+  };
 };
 
 export const homeStrings: Record<Lang, HomeStrings> = {
@@ -136,6 +149,19 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       subtext: "Miễn phí giao đơn từ 150.000₫ · 7:00 - 20:00",
       button: "Đặt hàng ngay",
     },
+    footer: {
+      tagline: "Trái cây tươi, gọt sẵn - giao tận nơi tại Cần Thơ.",
+      addressLabel: "Địa chỉ",
+      navHeading: "Khám phá",
+      navHome: "Trang chủ",
+      navMenu: "Menu hôm nay",
+      navProcess: "Quy trình",
+      navWhy: "Vì sao chọn chúng tôi",
+      navOrder: "Đặt hàng",
+      connectHeading: "Kết nối với chúng tôi",
+      rights: "Gọt Gòi Nè. Đã đăng ký bản quyền.",
+      credit: "Thiết kế bởi Khoa - Saamiton",
+    },
   },
   en: {
     header: {
@@ -206,6 +232,19 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       heading: "Order now - get it in 30 minutes! 🚀",
       subtext: "Free delivery on orders from 150,000₫ · 7:00 AM - 8:00 PM",
       button: "Order now",
+    },
+    footer: {
+      tagline: "Fresh, pre-cut fruit - delivered around Cần Thơ.",
+      addressLabel: "Address",
+      navHeading: "Explore",
+      navHome: "Home",
+      navMenu: "Today's menu",
+      navProcess: "Our process",
+      navWhy: "Why choose us",
+      navOrder: "Order now",
+      connectHeading: "Connect with us",
+      rights: "Gọt Gòi Nè. All rights reserved.",
+      credit: "Designed by Khoa - Saamiton",
     },
   },
 };

@@ -1289,3 +1289,122 @@ input:focus-visible {
     height: 160%;
   }
 }
+
+.home-footer {
+  background: var(--green-dark);
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.home-footer-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 40px;
+  padding-top: 56px;
+  padding-bottom: 40px;
+}
+
+.home-footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 340px;
+}
+
+.home-footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+  font-size: 18px;
+}
+
+.home-footer-logo-icon {
+  border-radius: 10px;
+}
+
+.home-footer-tagline,
+.home-footer-address {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.home-footer-address span {
+  color: white;
+  font-weight: 700;
+}
+
+.home-footer-social {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.home-footer-social-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.home-footer-social-btn:hover {
+  background: var(--accent);
+  color: var(--green-dark);
+  transform: translateY(-2px);
+}
+
+.home-footer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.home-footer-nav-heading {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.home-footer-nav a {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.home-footer-nav a:hover {
+  color: var(--accent);
+}
+
+.home-footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 18px 32px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@media (max-width: 700px) {
+  .home-footer-grid {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .home-footer-bottom {
+    padding: 18px 16px;
+    flex-direction: column;
+    text-align: center;
+  }
+}
