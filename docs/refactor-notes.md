@@ -1807,3 +1807,37 @@ hạt`. Lọc chạy trên cả lưới trái cây hôm nay lẫn lưới sản 
 - 375×812: đóng → `headerH 106.75`, `.home-nav-search` `display: none`, nút
   mở hiện. Mở → `headerH 164.75`, ô trải hết chiều ngang, gõ `mango` lọc còn
   1 loại, không tràn ngang. Đóng lại → về `106.75` và từ khoá tự xoá.
+
+### Sửa lỗi ngay sau đó: ô tìm kiếm không xuống hàng trên điện thoại
+
+Rà production sau khi deploy thì phát hiện ô tìm kiếm **không** trải hết chiều
+ngang thành hàng thứ hai như thiết kế. Nó bị bóp vào hàng đầu, rộng đúng
+**81px** trên màn 375px, nằm chen giữa VI|EN và nút khoá.
+
+Nguyên nhân đo được trên production:
+
+```
+flexBasis: "0%"    <- từ quy tắc gốc `.home-nav-search { flex: 1 }`
+width:     "100%"  <- quy tắc trong media query
+rectW:     81px    <- thực tế
+```
+
+**Với phần tử flex, `flex-basis` quyết định kích thước nền chứ không phải
+`width`.** Quy tắc gốc đặt `flex: 1`, tức `flex-basis: 0%`. Đặt thêm
+`width: 100%` không đổi được basis, nên ô không bao giờ đủ rộng để bị đẩy
+xuống hàng mới — nó chỉ co lại vừa chỗ trống còn lại.
+
+Sửa: trong media query dùng `flex: 1 1 100%` thay cho `width: 100%`.
+
+**Về con số 164.75px báo ở mục trên:** đo ở dev server và lúc đó đúng, nhưng
+**production hành xử khác** và tôi không tái hiện được sự khác biệt đó để giải
+thích. Không suy đoán thêm. Điều chắc chắn: nguyên nhân là `flex-basis` thắng
+`width`, và `flex: 1 1 100%` cho kết quả đúng ở cả hai môi trường.
+
+**Bài học:** với phần tử nằm trong `display: flex`, muốn nó chiếm nguyên một
+hàng thì đặt `flex-basis`, đừng đặt `width` — và kiểm chứng trên production
+chứ không chỉ ở dev server.
+
+Kiểm chứng sau khi sửa (375×812): `flexBasis: 100%`, ô rộng **343px**,
+`top: 58px` (tức đã ở hàng riêng, không còn nằm hàng đầu), header 164.75px khi
+mở, gõ `mango` lọc còn 1 loại, không tràn ngang.

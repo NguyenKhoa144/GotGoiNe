@@ -1383,10 +1383,15 @@ button.home-nav-search-btn:hover {
     display: flex;
   }
 
+  /* `flex: 1 1 100%` chứ không phải `width: 100%`: với phần tử flex thì
+     `flex-basis` quyết định kích thước nền, và quy tắc gốc đặt `flex: 1`
+     tức basis `0%`. Đặt `width` thôi thì basis vẫn là 0 — ô không bao giờ đủ
+     rộng để bị đẩy xuống hàng mới, nó chỉ co lại vừa chỗ trống còn lại trên
+     hàng đầu (đo được 81px trên màn 375px). */
   .home-nav-search {
     display: none;
     order: 3;
-    width: 100%;
+    flex: 1 1 100%;
     max-width: none;
   }
 
