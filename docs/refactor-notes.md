@@ -1198,3 +1198,96 @@ Những chỗ mất thời gian, ghi lại để lần sau không vấp lại:
 - `npm run verify` xanh.
 - Gán tạm một ảnh thật cho "Xoài cát Hòa Lộc" rồi kiểm tra HTML máy chủ trả về: có `home-p-photo` kèm thẻ `<img>`, `home-p-price` và `home-p-weight` đều **0 lần xuất hiện**. Bộ tối ưu ảnh `/_next/image` trả `HTTP 200 · image/jpeg · 35965 byte`. Đã gỡ ảnh thử và xoá script sau khi kiểm tra.
 - Lưu ý công cụ: khung xem trước trong Claude Code báo `window.innerWidth = 0` và `getBoundingClientRect` cho số đo sai (thẻ 110px, ảnh 52px) khi pane đang ẩn — cùng họ với lỗi `document.hidden` đã ghi trước đây. **Đừng tin số đo bố cục lấy từ pane đang ẩn**; dùng `curl` vào HTML và kiểm tra CSS trực tiếp thì chắc chắn hơn.
+
+## 2026-09-13 - Sửa header trên điện thoại (mục A, bước 1)
+
+### Cập nhật
+
+Rà soát giao diện trang chủ trên máy thật (desktop + giả lập iPhone 375×812)
+phát hiện header đang hỏng trên điện thoại. Ba con số đo được trước khi sửa:
+
+- Header cao **131.5px** trên màn cao 812px → chiếm **16% màn hình**, mà lại
+  dính cứng (`position: sticky`) nên chiếm suốt lúc cuộn.
+- Dải danh mục `.home-nav-cats` có nội dung rộng **494px** nằm trong khung
+  **375px**, `scrollLeft = 0` → nút đang chọn "Hộp cắt sẵn" bị cắt, trên màn
+  hình chỉ còn chữ "n".
+- Ô tìm kiếm bị dồn xuống hàng riêng, chiếm nguyên một dòng.
+
+Đã sửa ở hai file:
+
+**`app/home.css`**
+- `.home-nav-cats`: thêm `scroll-behavior: smooth`, ẩn thanh cuộn
+  (`scrollbar-width: none` + `::-webkit-scrollbar { display: none }`).
+- Trong `@media (max-width: 700px)`:
+  - `.home-nav-top` đổi `flex-wrap: wrap` → `nowrap`, giảm padding dọc
+    14px → 10px.
+  - `.home-nav-search` → `display: none`.
+  - Logo thu từ 48px → 38px, chữ logo 15px → 13px, tagline 10px → 9px.
+  - `.home-nav-cats` đổi `justify-content: center` → `flex-start`.
+  - `.home-cat-pill` thu còn `8px 16px` / `12.5px`.
+
+**`components/home/header.tsx`**
+- Thêm `useEffect` gọi `scrollIntoView({ inline: "center" })` trên nút danh
+  mục đang chọn, để nút đó luôn tự trượt vào giữa dải khi đổi danh mục.
+- Thay emoji 🔍 ở nút tìm kiếm bằng icon `Search` của `lucide-react` (thư
+  viện đã có sẵn trong dự án, cùng bộ với icon `Lock` ở nút admin).
+
+### Thuật ngữ
+
+- **`justify-content: center` + `overflow-x: auto`**: khi nội dung rộng hơn
+  khung, canh giữa đẩy phần đầu danh sách ra **ngoài** vùng cuộn về phía trái
+  — và trình duyệt không cho cuộn ngược về đó. Đây chính là nguyên nhân gốc
+  của nút bị cắt, không phải do thiếu chỗ. Canh trái (`flex-start`) thì toàn
+  bộ phần tràn nằm về bên phải và cuộn tới được.
+- **`scrollIntoView({ inline: "center" })`**: bảo trình duyệt cuộn khung chứa
+  sao cho phần tử này nằm giữa theo chiều ngang.
+
+### Công dụng
+
+Khách vào bằng điện thoại (gần như toàn bộ traffic, vì đến từ Facebook và
+TikTok) nhìn thấy đủ tên danh mục đang chọn, và có thêm ~25px màn hình cho
+nội dung thật.
+
+### Lợi ích
+
+- Header còn **106.75px** (giảm 19%).
+- Dải danh mục cuộn đúng: bấm "Thức chấm nhà gọt" ở cuối danh sách, nút tự
+  trượt vào giữa, `fullyVisible = true`.
+- Bớt một emoji làm icon — nhất quán với bộ icon `lucide-react` sẵn có.
+
+### Rủi ro
+
+- **Ô tìm kiếm bị ẩn trên điện thoại.** Chấp nhận được vì nó vốn **không hoạt
+  động**: `header.tsx` chỉ dựng một `<input>` trơn, không state, không
+  handler, không nối với danh sách sản phẩm. Khi nào tìm kiếm chạy thật, xoá
+  khối `.home-nav-search { display: none }` trong media query là hiện lại.
+- Chữ nhỏ hơn trên điện thoại (12.5px cho nút danh mục) — vẫn trên ngưỡng đọc
+  được, nhưng nếu chủ shop thấy nhỏ thì tăng lại được, chỉ là số trong CSS.
+- Không đụng gì tới desktop; đã đối chiếu ảnh chụp trước/sau, bố cục giống hệt.
+
+### Quản trị rủi ro
+
+Toàn bộ thay đổi nằm trong một media query và một `useEffect` — quay lui bằng
+cách hoàn nguyên đúng hai file, không có dữ liệu hay schema nào bị đụng.
+
+### Hướng phát triển
+
+Các mục còn lại của đợt rà soát giao diện, theo thứ tự đề xuất: đổi font
+(hiện `body` đang là Arial ở `app/globals.css:38`, dựng dấu tiếng Việt xấu),
+thay nốt emoji còn lại (🚀 📦 🍉 ⏱️) bằng icon SVG, nén khoảng cách section
+trên điện thoại, thêm lớp phủ tối cho chữ hero, và thiết kế trạng thái rỗng
+cho khu "Tự tay ghép hộp".
+
+### Kiểm chứng
+
+- `npm run verify` (lint → typecheck → build) xanh; chỉ còn một cảnh báo cũ
+  không liên quan (`size` không dùng ở `fruit-box-section.tsx:31`).
+- Đo lại trên giả lập 375×812: `headerH = 106.75`, dải danh mục
+  `scrollWidth 561 / clientWidth 375`, nút đang chọn nằm trọn trong khung.
+- Sau khi bấm "Thức chấm nhà gọt": `scrollLeft = 186`, `fullyVisible = true`.
+- Desktop: khung chỉ báo nền xanh đo được `left 221px / width 133px`, khớp
+  đúng nút đang chọn (`offsetLeft 221 / offsetWidth 133`).
+- Lưu ý công cụ: ảnh chụp màn hình bắt được khung chỉ báo đang ở giữa chừng
+  hiệu ứng trượt 320ms, trông như một chấm tròn lệch — **không phải lỗi**.
+  Cùng họ với ghi chú hiệu ứng của khung xem trước đã ghi trước đây; đo bằng
+  `getBoundingClientRect` mới là số thật.

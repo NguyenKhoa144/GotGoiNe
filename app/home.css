@@ -194,8 +194,14 @@ input:focus-visible {
   gap: 10px;
   padding: 0 32px 14px;
   overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.home-nav-cats::-webkit-scrollbar {
+  display: none;
 }
 
 .home-cat-indicator {
@@ -1231,26 +1237,57 @@ input:focus-visible {
     padding-right: 16px;
   }
 
+  /* Header gọn trên điện thoại: một hàng duy nhất cho logo + thao tác, một
+     hàng cuộn ngang cho danh mục. Trước đây header cao 131px trên màn 812px
+     (16% màn hình) vì ô tìm kiếm bị đẩy xuống hàng riêng. */
   .home-nav-top {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
   }
 
+  /* Ô tìm kiếm hiện chưa nối với dữ liệu (chỉ là input trơn), nên trên điện
+     thoại nó chỉ tốn chỗ. Bỏ dòng này khi tìm kiếm chạy thật. */
   .home-nav-search {
-    order: 3;
-    width: 100%;
-    max-width: none;
+    display: none;
+  }
+
+  .home-nav-logo-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+
+  .home-nav-logo-text strong {
+    font-size: 13px;
+  }
+
+  .home-nav-logo-text span {
+    font-size: 9px;
   }
 
   .home-nav-actions {
-    margin-left: 0;
+    margin-left: auto;
+    gap: 14px;
   }
 
   .home-nav-link {
     display: none;
   }
 
-  .home-nav-lang {
-    margin-left: auto;
+  /* Căn trái thay vì căn giữa: `justify-content: center` cộng với khung cuộn
+     ngang khiến phần đầu danh sách tràn ra ngoài mép trái và không cuộn tới
+     được — đó là lý do nút đang chọn bị cắt mất chữ. */
+  .home-nav-cats {
+    justify-content: flex-start;
+    gap: 8px;
+    padding-bottom: 10px;
+  }
+
+  .home-cat-pill {
+    padding: 8px 16px;
+    font-size: 12.5px;
   }
 
   .home-hero-content {

@@ -1,9 +1,9 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Lock } from "lucide-react";
+import { Lock, Search } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
 
@@ -43,6 +43,13 @@ export function Header({ categories, activeCategoryIndex, onCategoryChange }: He
     return () => observer.disconnect();
   }, [activeCategoryIndex, categories]);
 
+  // Dải danh mục cuộn ngang trên màn hẹp: kéo nút đang chọn vào giữa tầm nhìn,
+  // nếu không nút đầu/cuối sẽ nằm ngoài mép và trông như bị cắt mất chữ.
+  useEffect(() => {
+    const activePill = pillRefs.current[activeCategoryIndex];
+    activePill?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [activeCategoryIndex]);
+
   return (
     <header className="home-site-header">
       <div className="home-nav-top">
@@ -64,7 +71,7 @@ export function Header({ categories, activeCategoryIndex, onCategoryChange }: He
         <div className="home-nav-search">
           <input type="text" placeholder={t.searchPlaceholder} />
           <button className="home-nav-search-btn" aria-label={t.searchAria}>
-            🔍
+            <Search size={16} />
           </button>
         </div>
 
