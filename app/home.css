@@ -57,6 +57,10 @@ input:focus-visible {
   top: 0;
   z-index: 100;
   background: rgba(240, 249, 225, 0.92);
+  /* Safari chỉ nhận `backdrop-filter` không tiền tố từ bản 18. Thiếu dòng
+     -webkit- thì trên iOS 17 trở xuống hiệu ứng mờ không áp dụng gì cả, và
+     nền chỉ còn là lớp màu 92% — nội dung cuộn phía dưới lộ qua. */
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
   backdrop-filter: blur(16px) saturate(160%);
   border-bottom: 1px solid var(--border);
 }
@@ -283,7 +287,13 @@ button.home-nav-search-btn:hover {
 
 .home-hero {
   position: relative;
+  /* Trên iOS Safari `vh` tính theo viewport LỚN NHẤT (khi thanh địa chỉ đã
+     ẩn), nên lúc mới vào trang hero cao hơn phần nhìn thấy và nút "Xem menu
+     hôm nay" bị khuất dưới thanh địa chỉ. `dvh` là viewport ĐANG hiện. Giữ
+     dòng `vh` phía trên làm dự phòng cho trình duyệt cũ chưa biết `dvh`.
+     Cùng cách đã dùng ở .home-process-break. */
   min-height: 88vh;
+  min-height: 88dvh;
   display: flex;
   align-items: flex-end;
   background-image: url("/images/boxes/hero-tao-cam.jpg");
@@ -415,6 +425,9 @@ button.home-nav-search-btn:hover {
 
 .home-hero-card {
   background: rgba(255, 255, 255, 0.1);
+  /* Thẻ này nền chỉ 10% trắng — không có blur thì gần như trong suốt hoàn
+     toàn, chữ giá đè thẳng lên ảnh trái cây. Xem ghi chú ở .home-site-header. */
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: var(--r-lg);
@@ -733,6 +746,16 @@ button.home-nav-search-btn:hover {
    cao, dù ảnh gốc tỷ lệ ra sao — ảnh đã được cắt vuông lúc tải lên, khung
    này chỉ để phòng những ảnh cũ dán bằng link ngoài. */
 .home-p-photo {
+  /* Lá chắn cho WebKit: Safari từng không tôn trọng `overflow: hidden` +
+     `border-radius` khi cắt phần tử `position: absolute` có ngữ cảnh
+     compositing riêng — đúng trường hợp ở đây, vì `next/image` với `fill`
+     dựng ảnh bằng `position: absolute`. Dự án đã dính lỗi này một lần
+     (refactor-notes 2026-07-23). `clip-path` đi qua pipeline cắt khác nên
+     là lớp phòng vệ độc lập.
+     Đặt trên KHUNG ẢNH chứ không trên thẻ cha: `clip-path` cắt luôn cả
+     `box-shadow`, mà thẻ cha có bóng đổ khi rê chuột.
+     Trừ 2px vì khung ảnh nằm bên trong đường viền của thẻ. */
+  clip-path: inset(0 round calc(var(--r-md) - 2px) calc(var(--r-md) - 2px) 0 0);
   position: relative;
   display: flex;
   align-items: center;
@@ -954,6 +977,8 @@ button.home-nav-search-btn:hover {
 /* Ảnh tràn hết chiều ngang ô thay vì một vòng tròn nhỏ. Khung vuông giữ mọi
    ô cùng nhịp; ô rộng dùng khung 3:2 để không cao quá so với hàng bên cạnh. */
 .home-fruitbox-item-photo {
+  /* Cùng lý do với .home-p-photo ở trên. */
+  clip-path: inset(0 round calc(var(--r-md) - 2px) calc(var(--r-md) - 2px) 0 0);
   position: relative;
   display: flex;
   align-items: center;

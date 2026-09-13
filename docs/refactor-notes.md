@@ -1927,3 +1927,78 @@ query đó; `max-width: 540px` ở quy tắc gốc vẫn chặn trên cho tablet
 - Android Chrome và Firefox thật.
 - `prefers-reduced-motion` (CSS có xử lý, chưa giả lập được).
 - Các trang admin ở cỡ màn khác desktop.
+
+## 2026-09-13 - Rà code tìm chỗ Safari hay lỗi, sửa 3 chỗ
+
+Không mở được Safari thật (xem mục "Chưa kiểm được" ở trên: iOS Simulator
+cần runtime iOS mà máy chưa cài — `xcrun simctl list runtimes` trả về rỗng dù
+`xcode-select -p` đã đúng; thông báo lỗi của công cụ nói về `xcode-select` là
+gây hiểu nhầm). Nên rà tĩnh bằng cách đọc code tìm những kiểu CSS mà WebKit
+nổi tiếng khác Chromium.
+
+### Cập nhật
+
+**1. `backdrop-filter` thiếu tiền tố `-webkit-`** — chắc chắn hỏng, không cần
+chạy thử để biết.
+
+Safari chỉ nhận `backdrop-filter` **không tiền tố từ bản 18**. Trên iOS 17 trở
+xuống hiệu ứng mờ không áp dụng gì cả. Hai chỗ dùng, và cả hai đều dựa hẳn vào
+blur để đọc được chữ:
+- `.home-site-header` — nền còn lại chỉ là lớp màu 92%, nội dung cuộn phía
+  dưới lộ qua.
+- `.home-hero-card` — nền chỉ `rgba(255,255,255,0.1)`, không blur thì gần như
+  trong suốt hoàn toàn, chữ giá đè thẳng lên ảnh trái cây.
+
+Đã thêm `-webkit-backdrop-filter` trước dòng không tiền tố ở cả hai.
+
+**2. `min-height: 88vh` ở hero** — trên iOS Safari `vh` tính theo viewport
+**lớn nhất** (khi thanh địa chỉ đã ẩn), nên lúc mới vào trang hero cao hơn
+phần nhìn thấy và nút "Xem menu hôm nay" bị khuất dưới thanh địa chỉ. Thêm
+`min-height: 88dvh` ngay sau (`dvh` = viewport đang hiện), giữ dòng `vh` làm
+dự phòng cho trình duyệt cũ. `app/layout.tsx` đã dùng `min-h-dvh` cho `body`
+và `.home-process-break` đã có cặp `vh`/`dvh` — hero là chỗ duy nhất còn sót.
+
+**3. `overflow: hidden` + `border-radius` + ảnh `position: absolute`** — đúng
+loại lỗi dự án đã dính một lần (mục 2026-07-23).
+
+`.home-fruitbox-item` và `.home-product-card` — **cả hai do đợt bento hôm nay
+dựng ra** — đều bo góc rồi cắt bằng `overflow: hidden`, bên trong chứa
+`next/image` với `fill`, tức `position: absolute` có ngữ cảnh compositing
+riêng. Chính là tình huống WebKit từng không cắt đúng.
+
+Thêm `clip-path` làm lá chắn độc lập, **nhưng đặt trên KHUNG ẢNH
+(`.home-p-photo`, `.home-fruitbox-item-photo`) chứ không trên thẻ cha** —
+`clip-path` cắt luôn cả `box-shadow`, mà hai thẻ cha đều có bóng đổ khi rê
+chuột. Bán kính trừ 2px vì khung ảnh nằm bên trong đường viền thẻ, và chỉ bo
+hai góc trên vì khung ảnh nằm ở đỉnh thẻ.
+
+### Thuật ngữ
+
+- **`dvh` (dynamic viewport height)**: chiều cao viewport **đang hiện tại**,
+  co giãn theo việc thanh địa chỉ của trình duyệt di động ẩn/hiện. `vh` thì cố
+  định theo viewport lớn nhất — đó là lý do trang hay bị "hụt" một khúc trên
+  iOS.
+
+### Rủi ro
+
+- Đây là **suy luận từ code, chưa phải bằng chứng từ Safari thật**. Cả ba đều
+  thuộc loại "thêm vào thì an toàn dù trình duyệt có lỗi hay không", nên kể cả
+  khi Safari hiện tại đã ổn thì cũng không mất gì.
+- Chỗ thứ tư đã cân nhắc nhưng **không sửa**: `.home-fruitbox-item-photo` kết
+  hợp `aspect-ratio` với `flex: 1 1 auto; min-height: 0`. Safari 15.x từng
+  tính sai `aspect-ratio` cho flex item. Bản hiện tại nhiều khả năng đã ổn, và
+  sửa mù thì dễ làm hỏng bố cục đang đúng. **Nếu sau này ảnh trên iPhone trông
+  sai tỉ lệ thì soi chỗ này đầu tiên.**
+
+### Kiểm chứng
+
+- `npm run verify` xanh.
+- Kiểm trong **file CSS của bản build** (không phải file nguồn), để chắc trình
+  rút gọn không nuốt mất tiền tố:
+  `-webkit-backdrop-filter` **2 lần**, `88dvh` **1 lần**, `clip-path:inset(0
+  round calc(var(--r-md) - 2px) ...)` **2 lần**.
+- `.home-fruitbox-item` (thẻ cha) **không** có `clip-path`, và
+  `.home-fruitbox-item:hover{box-shadow:var(--shadow-lg)...}` còn nguyên —
+  bóng đổ không bị cắt.
+- Chromium: `heroMinH = 675.84px` trên viewport 768px (= 88%), `clipPath =
+  inset(0px round 20px 20px 0px 0px)` đúng như mong đợi.
