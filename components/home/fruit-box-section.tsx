@@ -12,9 +12,11 @@ import { getFruitBoxContent, type FruitBoxItem } from "@/data/fruit-box";
 type FruitBoxSectionProps = {
   activeCategory: string;
   items: FruitBoxItem[];
+  /** Khách đang gõ từ khoá — danh sách rỗng nghĩa là không khớp, không phải hết hàng. */
+  isSearching: boolean;
 };
 
-export function FruitBoxSection({ activeCategory, items }: FruitBoxSectionProps) {
+export function FruitBoxSection({ activeCategory, items, isSearching }: FruitBoxSectionProps) {
   const { lang } = useLanguage();
   const t = homeStrings[lang].fruitBox;
   const tProducts = homeStrings[lang].products;
@@ -71,8 +73,8 @@ export function FruitBoxSection({ activeCategory, items }: FruitBoxSectionProps)
             {items.length === 0 ? (
               <div className="home-fruitbox-empty">
                 <Package size={30} strokeWidth={1.6} aria-hidden="true" />
-                <strong>{t.emptyToday}</strong>
-                <p>{t.emptyHint}</p>
+                <strong>{isSearching ? t.noResultToday : t.emptyToday}</strong>
+                <p>{isSearching ? t.noResultHint : t.emptyHint}</p>
               </div>
             ) : (
               <p className="home-fruitbox-hint">{t.pickInstructions}</p>

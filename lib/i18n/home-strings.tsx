@@ -7,6 +7,9 @@ type HomeStrings = {
     logoTagline: string;
     searchPlaceholder: string;
     searchAria: string;
+    searchOpen: string;
+    searchClose: string;
+    searchClear: string;
     menuToday: string;
     adminLogin: string;
   };
@@ -31,6 +34,8 @@ type HomeStrings = {
     subtitle: string;
     emptyTitle: string;
     emptyDesc: string;
+    noResultTitle: string;
+    noResultDesc: string;
     addAriaPrefix: string;
   };
   fruitBox: {
@@ -45,6 +50,8 @@ type HomeStrings = {
     comingSoonDesc: string;
     emptyToday: string;
     emptyHint: string;
+    noResultToday: string;
+    noResultHint: string;
   };
   how: {
     eyebrow: string;
@@ -87,6 +94,9 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       logoTagline: "Trái cây gọt sẵn",
       searchPlaceholder: "Tìm kiếm sản phẩm...",
       searchAria: "Tìm kiếm sản phẩm",
+      searchOpen: "Mở ô tìm kiếm",
+      searchClose: "Đóng ô tìm kiếm",
+      searchClear: "Xoá từ khoá",
       menuToday: "Menu hôm nay",
       adminLogin: "Đăng nhập quản trị",
     },
@@ -119,6 +129,8 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       subtitle: "Gọt và đóng gói ngay mỗi buổi sáng - đảm bảo độ tươi tối đa khi đến tay bạn.",
       emptyTitle: "Menu đang được cập nhật",
       emptyDesc: "Danh mục này sẽ có sản phẩm mới sau khi bếp chốt nguyên liệu trong ngày.",
+      noResultTitle: "Không tìm thấy loại nào",
+      noResultDesc: "Thử từ khoá ngắn hơn, hoặc xem danh mục khác ở thanh phía trên.",
       addAriaPrefix: "Thêm ",
     },
     fruitBox: {
@@ -133,6 +145,8 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       comingSoonDesc: "Tính năng đặt hộp tự chọn đang được hoàn thiện - theo dõi Gọt Gòi Nè để là người đặt đầu tiên nhé.",
       emptyToday: "Hôm nay chưa có trái cây để ghép hộp",
       emptyHint: "Bếp đang chốt nguyên liệu trong ngày - ghé lại sau một chút nha!",
+      noResultToday: "Không tìm thấy loại nào",
+      noResultHint: "Hôm nay menu không có loại này. Thử từ khoá ngắn hơn xem sao!",
     },
     how: {
       eyebrow: "Quy trình",
@@ -173,6 +187,9 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       logoTagline: "Pre-cut fresh fruit",
       searchPlaceholder: "Search products...",
       searchAria: "Search products",
+      searchOpen: "Open search",
+      searchClose: "Close search",
+      searchClear: "Clear search",
       menuToday: "Today's menu",
       adminLogin: "Admin login",
     },
@@ -205,6 +222,8 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       subtitle: "Peeled and packed fresh every morning - guaranteed maximum freshness when it reaches you.",
       emptyTitle: "Menu is being updated",
       emptyDesc: "New items for this category will be added once the kitchen finalizes today's ingredients.",
+      noResultTitle: "Nothing matched",
+      noResultDesc: "Try a shorter keyword, or browse another category in the bar above.",
       addAriaPrefix: "Add ",
     },
     fruitBox: {
@@ -219,6 +238,8 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       comingSoonDesc: "The build-your-own box feature is still in the works - follow Gọt Gòi Nè to be first in line.",
       emptyToday: "No fruit to build a box today",
       emptyHint: "The kitchen is still picking today's produce - check back in a bit!",
+      noResultToday: "Nothing matched",
+      noResultHint: "Today's menu has no such fruit. Try a shorter keyword!",
     },
     how: {
       eyebrow: "Our process",

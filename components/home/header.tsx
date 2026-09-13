@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Lock, Search } from "lucide-react";
+import { Lock, Search, X } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
 
@@ -11,11 +11,24 @@ type HeaderProps = {
   categories: string[];
   activeCategoryIndex: number;
   onCategoryChange: (index: number) => void;
+  query: string;
+  onQueryChange: (value: string) => void;
 };
 
-export function Header({ categories, activeCategoryIndex, onCategoryChange }: HeaderProps) {
+export function Header({
+  categories,
+  activeCategoryIndex,
+  onCategoryChange,
+  query,
+  onQueryChange,
+}: HeaderProps) {
   const { lang, setLang } = useLanguage();
   const t = homeStrings[lang].header;
+
+  // Trên điện thoại ô tìm kiếm nằm ẩn sau một nút, để header vẫn gọn một hàng.
+  // Trên desktop nó luôn hiện, state này không có tác dụng gì.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const navRef = useRef<HTMLElement>(null);
   const pillRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -68,14 +81,49 @@ export function Header({ categories, activeCategoryIndex, onCategoryChange }: He
           </div>
         </a>
 
-        <div className="home-nav-search">
-          <input type="text" placeholder={t.searchPlaceholder} />
-          <button className="home-nav-search-btn" aria-label={t.searchAria}>
-            <Search size={16} />
-          </button>
+        <div className={`home-nav-search${searchOpen ? " home-is-open" : ""}`}>
+          <input
+            ref={searchInputRef}
+            type="search"
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder={t.searchPlaceholder}
+            aria-label={t.searchAria}
+          />
+          {query ? (
+            <button
+              type="button"
+              className="home-nav-search-btn"
+              aria-label={t.searchClear}
+              onClick={() => {
+                onQueryChange("");
+                searchInputRef.current?.focus();
+              }}
+            >
+              <X size={16} />
+            </button>
+          ) : (
+            <span className="home-nav-search-btn" aria-hidden="true">
+              <Search size={16} />
+            </span>
+          )}
         </div>
 
         <div className="home-nav-actions">
+          <button
+            type="button"
+            className="home-nav-search-toggle"
+            aria-label={searchOpen ? t.searchClose : t.searchOpen}
+            aria-expanded={searchOpen}
+            onClick={() => {
+              const next = !searchOpen;
+              setSearchOpen(next);
+              if (next) requestAnimationFrame(() => searchInputRef.current?.focus());
+              else onQueryChange("");
+            }}
+          >
+            {searchOpen ? <X size={17} /> : <Search size={17} />}
+          </button>
           <a href="#menu" className="home-nav-link">
             {t.menuToday}
           </a>

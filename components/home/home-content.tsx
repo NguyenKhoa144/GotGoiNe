@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { trackAddToCart } from "@/lib/analytics";
+import { matchesQuery } from "@/lib/search";
 import { LanguageProvider, useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
 import { CtaBanner } from "@/components/home/cta-banner";
@@ -27,8 +28,17 @@ function HomeContent({ viProducts }: { viProducts: Product[] }) {
   // thứ 2, chỉ đổi nhãn hiển thị).
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const [flash, setFlash] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const activeCategory = content.categories[activeCategoryIndex];
-  const visibleProducts = products.filter((product) => product.category === activeCategory);
+  // Tìm kiếm lọc TRONG danh mục đang xem, không nhảy sang danh mục khác —
+  // nhảy tab dưới chân người dùng là cách nhanh nhất làm họ lạc.
+  const categoryProducts = products.filter((product) => product.category === activeCategory);
+  const visibleProducts = categoryProducts.filter((product) =>
+    matchesQuery(`${product.name} ${product.description ?? ""}`, query)
+  );
+  // Phân biệt "danh mục này vốn trống" với "có hàng nhưng từ khoá không khớp"
+  // — hai tình huống cần hai câu trả lời khác nhau cho khách.
+  const isSearching = query.trim().length > 0;
   // Danh mục đầu tiên ("Hộp cắt sẵn") là menu hằng ngày ghép theo trái cây
   // rời, thay vì các SKU đóng gói cố định như những danh mục còn lại — nên
   // dùng giao diện chọn trái cây thay cho lưới sản phẩm.
@@ -50,18 +60,25 @@ function HomeContent({ viProducts }: { viProducts: Product[] }) {
           categories={content.categories}
           activeCategoryIndex={activeCategoryIndex}
           onCategoryChange={setActiveCategoryIndex}
+          query={query}
+          onQueryChange={setQuery}
         />
         <Hero stats={content.heroStats} flash={flash} onAdd={handleAdd} />
         <MarqueeStrip items={content.marqueeItems} />
         <WhySection reasons={content.whyReasons} />
         {isBuildYourOwnCategory ? (
-          <FruitBoxSection activeCategory={activeCategory} items={fruitBoxItems} />
+          <FruitBoxSection
+            activeCategory={activeCategory}
+            items={fruitBoxItems}
+            isSearching={isSearching}
+          />
         ) : (
           <ProductsSection
             activeCategory={activeCategory}
             products={visibleProducts}
             flash={flash}
             onAdd={handleAdd}
+            isSearching={isSearching}
           />
         )}
         <HowSection steps={content.processSteps} />

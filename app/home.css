@@ -123,6 +123,14 @@ input:focus-visible {
   outline: none;
 }
 
+/* `input[type="search"]` được trình duyệt tự gắn thêm một nút xoá (dấu X nhỏ
+   ở góc phải). Ta đã có nút xoá riêng, giữ cả hai là hai dấu X cạnh nhau. */
+.home-nav-search input::-webkit-search-cancel-button,
+.home-nav-search input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .home-nav-search input:focus {
   border-color: rgba(30, 92, 46, 0.42);
   box-shadow: 0 0 0 4px rgba(30, 92, 46, 0.08);
@@ -133,10 +141,38 @@ input:focus-visible {
   right: 14px;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
   background: none;
   border: none;
-  cursor: pointer;
+  padding: 0;
+  color: var(--text-muted);
   border-radius: 999px;
+}
+
+button.home-nav-search-btn {
+  cursor: pointer;
+}
+
+button.home-nav-search-btn:hover {
+  color: var(--green-dark);
+}
+
+/* Nút mở ô tìm kiếm chỉ có nghĩa trên điện thoại, nơi ô tìm kiếm bị giấu đi
+   để header gọn một hàng. Desktop luôn thấy ô nên không cần nút. */
+.home-nav-search-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.home-nav-search-toggle:hover {
+  color: var(--green-dark);
 }
 
 .home-nav-actions {
@@ -1331,20 +1367,32 @@ input:focus-visible {
     padding-right: 16px;
   }
 
-  /* Header gọn trên điện thoại: một hàng duy nhất cho logo + thao tác, một
-     hàng cuộn ngang cho danh mục. Trước đây header cao 131px trên màn 812px
-     (16% màn hình) vì ô tìm kiếm bị đẩy xuống hàng riêng. */
+  /* Header gọn trên điện thoại: logo + thao tác trên một hàng, một hàng cuộn
+     ngang cho danh mục. Trước đây header cao 131px trên màn 812px (16% màn
+     hình) vì ô tìm kiếm luôn chiếm một hàng riêng.
+     `wrap` để ô tìm kiếm xuống được hàng thứ hai KHI ĐƯỢC MỞ; lúc đóng nó
+     `display: none` nên header vẫn chỉ một hàng. */
   .home-nav-top {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 10px;
     padding-top: 10px;
     padding-bottom: 10px;
   }
 
-  /* Ô tìm kiếm hiện chưa nối với dữ liệu (chỉ là input trơn), nên trên điện
-     thoại nó chỉ tốn chỗ. Bỏ dòng này khi tìm kiếm chạy thật. */
+  .home-nav-search-toggle {
+    display: flex;
+  }
+
   .home-nav-search {
     display: none;
+    order: 3;
+    width: 100%;
+    max-width: none;
+  }
+
+  .home-nav-search.home-is-open {
+    display: block;
+    margin-bottom: 2px;
   }
 
   .home-nav-logo-icon {

@@ -1721,3 +1721,89 @@ từ sáu file xuống bốn.
   `400/700/800/900` × (latin, vietnamese); `has500: false`, `has600: false`.
 - Bốn chỗ đổi sang 700 đo lại đúng `fontWeight: 700`; `body` vẫn `400`.
 - Đối chiếu ảnh chụp trang chủ và trang đăng ký trước/sau: không thấy khác.
+
+## 2026-09-13 - Nối ô tìm kiếm vào dữ liệu
+
+### Cập nhật
+
+Ô tìm kiếm ở header tồn tại từ lâu nhưng **chưa bao giờ hoạt động**:
+`header.tsx` chỉ dựng một `<input>` trơn, không state, không handler, không
+nối với danh sách nào. Vì thế ở đợt sửa header (bước 1) nó đã bị ẩn trên điện
+thoại. Giờ nó chạy thật.
+
+**`lib/search.ts` (mới)** — hai hàm thuần:
+
+- `normalizeVi(text)`: hạ chữ thường, `normalize("NFD")` tách dấu rời khỏi
+  nguyên âm rồi xoá dấu, thay `đ` → `d`, gộp khoảng trắng.
+- `matchesQuery(text, query)`: khớp khi **mọi từ** trong từ khoá xuất hiện
+  trong văn bản, **không cần đúng thứ tự**. Từ khoá rỗng khớp tất cả, để chỗ
+  gọi không phải kiểm tra riêng.
+
+**`components/home/home-content.tsx`** — thêm state `query`; tách
+`categoryProducts` (lọc theo danh mục) khỏi `visibleProducts` (lọc thêm theo
+từ khoá, so trên `name` + `description`); truyền `isSearching` xuống hai
+section.
+
+**`components/home/header.tsx`** — input thành controlled; nút bên phải đổi
+giữa kính lúp (khi rỗng) và nút xoá (khi có chữ), xoá xong trả con trỏ về ô
+nhập. Thêm nút mở/đóng tìm kiếm **chỉ hiện trên điện thoại**.
+
+**`app/home.css`** — bỏ `.home-nav-search { display: none }` trên mobile, thay
+bằng cơ chế mở/đóng: đóng thì `display: none` (header một hàng), mở thì trải
+hết chiều ngang thành hàng thứ hai.
+
+### Thuật ngữ
+
+- **`normalize("NFD")`**: tách một ký tự có dấu thành ký tự gốc cộng dấu rời
+  (`ế` → `e` + `́`), nhờ vậy xoá dấu chỉ là xoá dải ký tự `̀-ͯ`.
+  Riêng `đ` **không** phải `d` cộng dấu mà là một ký tự độc lập, NFD không
+  đụng tới — phải thay tay. Bỏ sót chỗ này là "du du" không ra "Đu đủ".
+- **Controlled input**: giá trị ô nhập do React giữ, không phải do DOM. Nhờ
+  vậy nút xoá và việc đóng ô tìm kiếm mới xoá được từ khoá thật.
+
+### Công dụng
+
+Khách gõ `dua hau` (không dấu, như gõ trên điện thoại) vẫn ra `Dưa hấu không
+hạt`. Lọc chạy trên cả lưới trái cây hôm nay lẫn lưới sản phẩm.
+
+### Lợi ích
+
+- Tìm kiếm **lọc trong danh mục đang xem**, không tự nhảy tab. Nhảy tab dưới
+  chân người dùng là cách nhanh nhất làm họ lạc.
+- `isSearching` phân biệt "danh mục này vốn trống" với "có hàng nhưng từ khoá
+  không khớp" — hai tình huống cần hai câu trả lời khác nhau, nếu dùng chung
+  một câu thì khách tưởng quán hết hàng.
+- Header trên điện thoại **vẫn 106.75px khi đóng**, chỉ cao lên 164.75px khi
+  người dùng chủ động mở. Không quay lại cảnh 131px cũ.
+
+### Rủi ro
+
+- Lọc chạy phía client trên danh sách đã tải sẵn, không gọi máy chủ. Ở quy mô
+  vài chục loại thì đây là lựa chọn đúng; nếu sau này danh mục lên hàng trăm
+  sản phẩm thì mới cần tìm kiếm phía máy chủ.
+- Từ khoá **không** lưu vào URL, nên không chia sẻ được link kết quả và bấm
+  back không quay lại từ khoá trước. Cố ý giữ đơn giản; thêm sau bằng
+  `useSearchParams` nếu cần.
+- Đổi danh mục **không** xoá từ khoá — đây là chủ ý (đang tìm "dưa" mà chuyển
+  tab thì vẫn đang tìm "dưa"), nhưng nếu chủ shop thấy khó hiểu thì đổi một
+  dòng là xong.
+
+### Kiểm chứng
+
+- 11 ca kiểm thử `matchesQuery` chạy bằng Node, **đúng cả 11**: không dấu
+  (`dua hau`), sai thứ tự (`hau dua`), chữ hoa (`DƯA HẤU`), `đ` (`du du` →
+  `Đu đủ`, và `dudu` phải KHÔNG khớp), từ khoá rỗng, không khớp (`cherry` ~
+  `Xoài cát Hòa Lộc`).
+- `npm run verify` xanh.
+- **Một lỗi phát hiện và sửa ngay khi xem ảnh chụp:** ô có **hai dấu X** —
+  `input[type="search"]` được trình duyệt tự gắn thêm nút xoá riêng. Đã ẩn
+  bằng `::-webkit-search-cancel-button { appearance: none }`; đếm lại còn
+  đúng 1 nút.
+- Desktop, lưới trái cây: gõ `melon` → còn 1 loại (`Seedless Watermelon`);
+  bấm nút xoá → ô rỗng, danh sách về đủ 3 loại, con trỏ quay lại ô nhập.
+- Desktop, lưới sản phẩm: gõ `gift` → 1 thẻ; gõ `khongcogi` → 0 thẻ kèm đúng
+  câu "Nothing matched · Try a shorter keyword…", không phải câu "menu đang
+  cập nhật".
+- 375×812: đóng → `headerH 106.75`, `.home-nav-search` `display: none`, nút
+  mở hiện. Mở → `headerH 164.75`, ô trải hết chiều ngang, gõ `mango` lọc còn
+  1 loại, không tràn ngang. Đóng lại → về `106.75` và từ khoá tự xoá.

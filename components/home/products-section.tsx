@@ -13,6 +13,8 @@ type ProductsSectionProps = {
   products: Product[];
   flash: string | null;
   onAdd: (key: string) => void;
+  /** Khách đang gõ từ khoá — danh sách rỗng nghĩa là không khớp, không phải hết hàng. */
+  isSearching: boolean;
 };
 
 export function ProductsSection({
@@ -20,6 +22,7 @@ export function ProductsSection({
   products,
   flash,
   onAdd,
+  isSearching,
 }: ProductsSectionProps) {
   const { lang } = useLanguage();
   const t = homeStrings[lang].products;
@@ -76,8 +79,8 @@ export function ProductsSection({
           </div>
         ) : (
           <div className="home-products-empty">
-            <strong>{t.emptyTitle}</strong>
-            <p>{t.emptyDesc}</p>
+            <strong>{isSearching ? t.noResultTitle : t.emptyTitle}</strong>
+            <p>{isSearching ? t.noResultDesc : t.emptyDesc}</p>
           </div>
         )}
       </div>
