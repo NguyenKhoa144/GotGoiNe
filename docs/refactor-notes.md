@@ -1569,3 +1569,94 @@ nhiều ngày.
   như `DATABASE_URL` vẫn nạp bình thường) với `ADMIN_USERNAME=devcheck` và một
   `ADMIN_PASSWORD_HASH_B64` tự sinh bằng `bcryptjs`, rồi khởi động lại dev
   server. **Đã xoá file này ngay sau khi kiểm chứng xong.**
+
+## 2026-09-13 - Nhịp contract: xoá 4 cột định lượng khỏi DailyMenuEntry
+
+### Cập nhật
+
+Đóng nốt nhịp **contract** của expand/migrate/contract, treo từ đợt tách tồn
+kho 21/08. Đã xoá khỏi `DailyMenuEntry`: `priceToday`, `qtyGrams`,
+`soldGrams`, `spoiledGrams`.
+
+**Sai sót của chính tôi, bắt được trước khi chạy migration.** Cuối lượt trước
+tôi nói "giờ không còn code nào đọc chúng" — sai, vì chỉ kiểm tra phía *đọc*
+trong `lib/stats.ts`. `grep` lại trước khi migrate thì còn ba chỗ:
+
+| File | Việc | Sửa thành |
+|---|---|---|
+| `app/admin/menu/actions.ts` | **ghi** `priceToday` + `qtyGrams` khi thêm món | bỏ hai trường; `findUnique` đổi sang `select: { id: true }` vì giờ chỉ cần biết loại đó có tồn tại không |
+| `lib/close-day.ts` | cron 00:00 **ghi** cả hai cột | bỏ hai trường |
+| `lib/products.ts` | trang khách **đọc** `priceToday` để dựng `price` | `price: entry.product.price` (giá ở bảng danh mục) |
+
+Xoá cột trước khi sửa ba chỗ này là thêm món vào menu và cron chốt ngày gãy
+ngay tại tầng DB — bốn cột đều `NOT NULL` và không có `DEFAULT`.
+
+Kèm theo: `prisma/backup.mjs` trước đây **không sao lưu `StockMovement`** —
+tức bản sao lưu cũ không dựng lại được tồn kho của bất kỳ loại nào, vì
+`stockGrams` chỉ là tổng của sổ cái. Đã bổ sung. Thêm `/backups` vào
+`.gitignore` (file sao lưu chứa dữ liệu thật, kể cả hash mật khẩu người dùng).
+
+### Thuật ngữ
+
+- **expand / migrate / contract**: cách đổi schema không gãy dịch vụ. *Expand*
+  thêm cấu trúc mới cạnh cấu trúc cũ; *migrate* chuyển code và dữ liệu sang
+  cái mới; *contract* mới xoá cái cũ. Nhịp ba chỉ an toàn khi bước hai đã
+  thật sự xong — và cách duy nhất để biết là `grep` cả phía đọc lẫn phía ghi,
+  không phải nhớ.
+
+### Công dụng
+
+`DailyMenuEntry` giờ đúng bằng vai trò của nó: `id · productId · date ·
+sortOrder · createdAt · updatedAt` — chỉ trả lời "hôm nay có bày loại này
+không". Không còn cột nào có thể bị đọc nhầm thành nguồn sự thật về tồn kho.
+
+### Rủi ro
+
+- **Mất dữ liệu vĩnh viễn**, đã lường trước: 4 dòng với `priceToday`
+  45000/28000/65000/35000, `qtyGrams` 1000 mỗi dòng, và một `spoiledGrams`
+  1000. Con số 1000 hao đó đã có sẵn trong `StockMovement` từ
+  `backfill-stock.mjs` nên không mất thật.
+- Toàn bộ đã sao lưu trước khi chạy:
+  `backups/neon-2026-09-13T12-29-53-615Z.json` (4 Product · 4 DailyMenuEntry ·
+  9 StockMovement · 1 InventoryLoss · 0 User).
+- `InventoryLoss` **vẫn giữ** dù không còn ai đọc lẫn ghi. Đây là dữ liệu lịch
+  sử, để nguyên không tốn gì; xoá bảng là một quyết định riêng, không gộp vào
+  nhịp contract này.
+
+### Quản trị rủi ro
+
+Sửa code trước, migration sau — và cố ý **không commit** trong lúc hai bên
+lệch nhau, vì push lúc đó là Vercel build đỏ. Cũng cố ý không chạy
+`prisma generate` sớm: sinh client theo schema mới trong khi DB còn cột
+`NOT NULL` sẽ làm `npm run verify` xanh giả mà thêm món vào menu thì gãy.
+
+### Hướng phát triển
+
+`Product.price` (chuỗi "45.000₫") giờ là nơi duy nhất còn giữ giá từng loại.
+Khách không thấy nó trên giao diện, nhưng nó **vẫn nằm trong payload RSC**
+gửi xuống trình duyệt qua `getTodayMenu()` — trước đây `priceToday` cũng vậy,
+nên đây không phải lỗi mới. Khi nào làm phần báo giá theo cỡ hộp thì bỏ hẳn
+`price` khỏi kiểu trả về của `getTodayMenu()` là gọn.
+
+### Kiểm chứng
+
+- Ba nguồn độc lập xác nhận migration đã áp: `information_schema` còn đúng
+  `id, productId, date, sortOrder, createdAt, updatedAt`; `_prisma_migrations`
+  có dòng `20260913123000_drop_daily_menu_quantities` lúc 12:57;
+  `npx prisma migrate status` báo hết migration treo.
+- Ba lượt trước đó `migrate deploy` được báo là đã chạy nhưng cả ba chỉ dấu
+  đều nói ngược lại — **bài học: luôn đo `information_schema` trước khi tin là
+  migration đã áp**, kể cả khi lệnh báo thành công, vì lệnh có thể chạy ở
+  thư mục khác.
+- `npx prisma generate` xong, `grep priceToday` trong client đã sinh: **0**.
+- `npm run verify` xanh, không lỗi không cảnh báo (trước khi migrate là 2 lỗi
+  TypeScript, đúng như dự kiến).
+- Thử tay trên dữ liệu thật, đường ghi: thêm "Dưa hấu không hạt" vào thực đơn
+  hôm nay ở tab Daily menu → không lỗi, menu hiện "1 loại".
+- Thử tay, đường đọc: trang khách (tiếng Việt) hiện đúng "Dưa hấu không hạt"
+  lấy từ DB. Rà cả trang tìm chuỗi giá: chỉ có `35.000₫` (thẻ demo viết cứng
+  trong hero) và `150.000₫` (ngưỡng miễn phí giao) — **không rò giá từng loại
+  trái**, bất biến vẫn giữ.
+- Đã gỡ món thử ngay sau đó; đếm lại `DailyMenuEntry` còn đúng 4 dòng của
+  21/08 như trước khi thử.
+- Tài khoản admin tạm dùng để kiểm chứng đã xoá (`.env.development.local`).

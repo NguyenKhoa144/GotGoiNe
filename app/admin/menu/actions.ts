@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { PRODUCT_CATEGORIES } from "@/data/home";
 import { vnToday } from "@/lib/date-vn";
-import { parseVnd } from "@/lib/money";
 import { uploadProductImage } from "@/lib/upload";
 
 // Mọi thay đổi thực đơn đều phải làm mới cả trang quản trị lẫn trang chủ —
@@ -117,7 +116,12 @@ export async function deleteProduct(id: string) {
 
 export async function addToTodayMenu(productId: string) {
   const date = vnToday();
-  const product = await prisma.product.findUnique({ where: { id: productId } });
+  // Chỉ cần biết loại này có thật hay không; định lượng và giá không còn lấy
+  // từ đây nữa (tồn kho nằm ở Product.stockGrams, giá theo cỡ hộp).
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { id: true },
+  });
   if (!product) return;
 
   const last = await prisma.dailyMenuEntry.findFirst({
@@ -132,10 +136,6 @@ export async function addToTodayMenu(productId: string) {
     create: {
       productId,
       date,
-      // Ba cột này thuộc mô hình cũ (định lượng gắn theo ngày), sẽ được xoá ở
-      // nhịp thu hẹp. Tồn kho thật nằm ở Product.stockGrams.
-      priceToday: parseVnd(product.price),
-      qtyGrams: product.stockGrams,
       sortOrder: (last?.sortOrder ?? 0) + 1,
     },
   });

@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { vnToday } from "@/lib/date-vn";
-import { formatVnd } from "@/lib/money";
 import type { Product } from "@/data/home";
 
 /**
@@ -27,7 +26,7 @@ export async function getTodayMenu(): Promise<Product[]> {
       emoji: entry.product.emoji,
       name: entry.product.name,
       weight: entry.product.weight,
-      price: formatVnd(entry.priceToday),
+      price: entry.product.price,
       badge: entry.product.badge ?? undefined,
       featured: entry.product.featured,
       description: entry.product.description ?? undefined,

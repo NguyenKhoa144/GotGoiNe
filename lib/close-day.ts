@@ -50,8 +50,6 @@ export async function carryForwardToToday(): Promise<CarryResult> {
       data: {
         productId: entry.productId,
         date: today,
-        priceToday: entry.priceToday,
-        qtyGrams: entry.product.stockGrams,
         sortOrder: entry.sortOrder,
       },
     });

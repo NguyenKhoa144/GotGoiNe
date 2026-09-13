@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Sao lưu dữ liệu Neon — chứa dữ liệu thật, không đưa lên git
 /backups
+
+# Bản sao lưu DB — chứa dữ liệu thật (kể cả hash mật khẩu người dùng)
+/backups
