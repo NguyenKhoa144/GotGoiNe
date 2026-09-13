@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
@@ -9,10 +11,12 @@ type HowSectionProps = {
   steps: ProcessStep[];
 };
 
+// Ảnh xen giữa các bước. Trước đây là `background-image` trong CSS nên không
+// qua được bộ tối ưu của Next — ba file này cộng lại 836KB tải nguyên bản.
 const BREAK_PHOTOS = [
-  "home-process-break-1",
-  "home-process-break-2",
-  "home-process-break-3",
+  "/images/boxes/quy-trinh-buoc-1.jpg",
+  "/images/boxes/quy-trinh-buoc-2.jpg",
+  "/images/boxes/quy-trinh-buoc-3.jpg",
 ];
 
 export function HowSection({ steps }: HowSectionProps) {
@@ -142,7 +146,17 @@ export function HowSection({ steps }: HowSectionProps) {
 
           {index < BREAK_PHOTOS.length ? (
             <div className="home-process-break" data-parallax>
-              <div className={`home-process-break-img ${BREAK_PHOTOS[index]}`} />
+              {/* Div này là thứ hiệu ứng parallax dịch chuyển — giữ nguyên,
+                  chỉ thay nền CSS bằng ảnh đã tối ưu đặt bên trong. */}
+              <div className="home-process-break-img">
+                <Image
+                  src={BREAK_PHOTOS[index]}
+                  alt=""
+                  fill
+                  sizes="100vw"
+                  className="home-process-break-photo"
+                />
+              </div>
               <div className="home-process-break-scrim" />
               <div className="home-process-break-caption">
                 <span className="home-process-break-eyebrow">

@@ -39,11 +39,30 @@ button {
     transform 180ms ease;
 }
 
+/*
+ * Vành sáng khi di chuyển bằng bàn phím — vành ĐÔI, cố ý.
+ *
+ * Bản cũ chỉ có một vành vàng 55% độ đục. Vàng `#f5a800` đặt trên nền trắng
+ * chỉ đạt tỉ lệ tương phản 2.0, dưới mức 3:1 mà WCAG đòi cho chỉ báo focus —
+ * hạ độ đục xuống 55% còn tệ hơn. Nhưng nếu đổi sang xanh đậm thì lại chìm
+ * nghỉm trên các nút nền xanh đậm.
+ *
+ * Nên dùng hai lớp: viền xanh đậm ôm sát phần tử (nổi trên nền sáng, 8.0),
+ * rồi vành vàng đặc phía ngoài (nổi trên nền tối và trên ảnh). Chỗ nào cũng
+ * có ít nhất một lớp nhìn rõ.
+ *
+ * `:focus-visible` chỉ hiện khi đi bằng bàn phím, không hiện khi bấm chuột.
+ */
 a:focus-visible,
 button:focus-visible,
-input:focus-visible {
-  outline: 3px solid rgba(245, 168, 0, 0.55);
-  outline-offset: 3px;
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #f5a800;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--green-dark);
 }
 
 .home-container {
@@ -170,7 +189,8 @@ button.home-nav-search-btn:hover {
   justify-content: center;
   background: none;
   border: none;
-  padding: 0;
+  padding: 13px;
+  margin: -13px;
   cursor: pointer;
   color: var(--text-muted);
 }
@@ -206,17 +226,26 @@ button.home-nav-search-btn:hover {
   font-weight: 700;
 }
 
+/* Hai nút này chỉ rộng 13-18px và cao 20px — gần như không bấm trúng. Nới
+   vùng bấm bằng `padding` rồi kéo lại bằng `margin` âm đúng bấy nhiêu: hộp
+   bấm được thành 44px cao, còn chỗ nó chiếm trong bố cục vẫn y như cũ nên
+   header không cao lên. */
 .home-nav-lang button {
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-muted);
+  padding: 12px 8px;
+  margin: -12px -8px;
 }
 
 .home-nav-admin {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Cùng cách nới vùng bấm như nút VI|EN. */
+  padding: 14px;
+  margin: -14px;
   color: var(--text-muted);
   opacity: 0.55;
   transition: opacity 0.2s, color 0.2s;
@@ -296,11 +325,14 @@ button.home-nav-search-btn:hover {
   min-height: 88dvh;
   display: flex;
   align-items: flex-end;
-  background-image: url("/images/boxes/hero-tao-cam.jpg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
   overflow: hidden;
+}
+
+/* Ảnh nền hero do `next/image` dựng (position: absolute, inset 0). */
+.home-hero-bg {
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
 }
 
 .home-hero-scrim {
@@ -480,8 +512,8 @@ button.home-nav-search-btn:hover {
 
 .home-hero-add-btn,
 .home-p-add {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 10px;
   display: flex;
@@ -680,7 +712,7 @@ button.home-nav-search-btn:hover {
 /* Tailwind Preflight đặt lại mọi thẻ tiêu đề về cùng cỡ chữ và độ đậm với
    đoạn văn, nên `<h4>` trong thẻ này trước đây trông y hệt phần mô tả bên
    dưới — người đọc không phân biệt được đâu là tên lý do. */
-.home-why-card h4 {
+.home-why-card h3 {
   font-size: 18px;
   font-weight: 800;
   color: var(--green-dark);
@@ -1062,9 +1094,11 @@ button.home-nav-search-btn:hover {
   gap: 12px;
 }
 
+/* 30x30 quá nhỏ cho ngón tay. Đây là thao tác CHÍNH của khu ghép hộp nên
+   nâng hẳn lên 44px — mức Apple và Google cùng khuyến nghị. */
 .home-fruitbox-step {
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 9px;
   background: var(--bg-muted);
@@ -1259,22 +1293,13 @@ button.home-nav-search-btn:hover {
   right: 0;
   top: -62%;
   height: 224%;
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
   will-change: transform;
 }
 
-.home-process-break-1 {
-  background-image: url("/images/boxes/quy-trinh-buoc-1.jpg");
-}
-
-.home-process-break-2 {
-  background-image: url("/images/boxes/quy-trinh-buoc-2.jpg");
-}
-
-.home-process-break-3 {
-  background-image: url("/images/boxes/quy-trinh-buoc-3.jpg");
+/* Ảnh xen giữa các bước do `next/image` dựng bên trong khung parallax. */
+.home-process-break-photo {
+  object-fit: cover;
+  object-position: center;
 }
 
 .home-process-break-scrim {
@@ -1630,8 +1655,8 @@ button.home-nav-search-btn:hover {
 }
 
 .home-footer-social-btn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;

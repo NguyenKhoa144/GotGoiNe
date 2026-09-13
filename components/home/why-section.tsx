@@ -29,7 +29,7 @@ export function WhySection({ reasons }: WhySectionProps) {
               <div className="home-why-icon">
                 <SectionIcon name={reason.icon} />
               </div>
-              <h4>{reason.title}</h4>
+              <h3>{reason.title}</h3>
               <p>{reason.description}</p>
             </div>
           ))}

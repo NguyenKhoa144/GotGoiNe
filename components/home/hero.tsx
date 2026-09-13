@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Bike, Check, Plus } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
@@ -17,6 +18,18 @@ export function Hero({ stats, flash, onAdd }: HeroProps) {
 
   return (
     <section className="home-hero" id="top">
+      {/* Ảnh nền trước đây là `background-image` trong CSS, tức đi vòng qua bộ
+          tối ưu của Next: khách tải nguyên file JPEG 368KB ở mọi cỡ màn. Dùng
+          `next/image` để được AVIF/WebP, cắt đúng cỡ màn, và `priority` cho
+          trình duyệt tải sớm — đây là ảnh lớn nhất màn hình đầu tiên. */}
+      <Image
+        src="/images/boxes/hero-tao-cam.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="home-hero-bg"
+      />
       <div className="home-hero-scrim" />
       <div className="home-hero-content">
         <div className="home-hero-left">

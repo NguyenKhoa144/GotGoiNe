@@ -2002,3 +2002,107 @@ hai góc trên vì khung ảnh nằm ở đỉnh thẻ.
   bóng đổ không bị cắt.
 - Chromium: `heroMinH = 675.84px` trên viewport 768px (= 88%), `clipPath =
   inset(0px round 20px 20px 0px 0px)` đúng như mong đợi.
+
+## 2026-09-13 - Tối ưu ảnh nền và sửa hai lỗi tiếp cận nặng nhất
+
+Sau khi chấm điểm trang theo nguyên lý thiết kế hiện đại, hai cột điểm thấp
+nhất là **hiệu năng (4/10)** và **khả năng tiếp cận (5/10)**. Đây là đợt sửa
+hai cột đó.
+
+### Cập nhật
+
+**1. Bốn ảnh nền đi vòng qua bộ tối ưu của Next**
+
+Ảnh hero và ba ảnh xen giữa các bước quy trình được nạp bằng
+`background-image` trong CSS. `next/image` **không đụng được vào ảnh nền
+CSS**, nên khách tải nguyên file JPEG gốc ở mọi cỡ màn: không nén lại, không
+WebP/AVIF, không cắt theo cỡ màn, không preload.
+
+Đã chuyển cả bốn sang `<Image fill>`:
+- `components/home/hero.tsx` — thêm `priority` vì đây là ảnh lớn nhất của màn
+  hình đầu tiên.
+- `components/home/how-section.tsx` — `BREAK_PHOTOS` đổi từ danh sách **tên
+  class** sang danh sách **đường dẫn ảnh**; `<Image>` đặt **bên trong**
+  `.home-process-break-img`, tức khung mà hiệu ứng parallax dịch chuyển, nên
+  parallax không phải sửa gì.
+- `app/home.css` — xoá cả bốn `background-image`; thêm `.home-hero-bg` và
+  `.home-process-break-photo` chỉ để đặt `object-fit: cover`.
+
+**2. Vùng bấm quá nhỏ**
+
+23/31 phần tử bấm được nhỏ hơn 44px. Đã sửa những chỗ thật sự gây khó:
+- `.home-fruitbox-step` (nút `−`/`+` — **thao tác chính của cả trang**):
+  30×30 → **44×44**.
+- `.home-p-add`: 38×38 → 44×44.
+- `.home-footer-social-btn`: 36×36 → 44×44.
+- Nút `VI`/`EN` (13×20 và 18×20), nút khoá admin (16×16), nút mở tìm kiếm:
+  nới vùng bấm bằng `padding` rồi kéo lại bằng `margin` âm đúng bấy nhiêu —
+  hộp bấm được thành 44px cao mà chỗ chiếm trong bố cục không đổi, nên
+  **header vẫn đúng 106.8px**.
+
+**3. Vành focus — kèm một đính chính**
+
+Khi chấm điểm tôi viết "chỉ có 2 quy tắc `:focus` trong toàn bộ CSS, người
+dùng bàn phím gần như không thấy mình đang ở đâu". **Sai.** Một trong hai quy
+tắc đó chính là vành focus toàn cục cho `a`, `button`, `input` ở
+`home.css:42`. Tôi đếm số quy tắc rồi suy ra kết luận, thay vì đọc xem chúng
+làm gì.
+
+Vấn đề thật hẹp hơn nhưng có thật: vành cũ là vàng ở **55% độ đục**, mà vàng
+`#f5a800` đặc trên nền trắng đã chỉ đạt tỉ lệ tương phản **2.0** — dưới mức
+**3:1** WCAG đòi cho chỉ báo focus; hạ độ đục còn tệ hơn. Đổi sang xanh đậm
+thì lại chìm trên chính các nút nền xanh đậm.
+
+Giải: **vành đôi** — `box-shadow` xanh đậm ôm sát phần tử (8.0 trên nền sáng)
+cộng `outline` vàng đặc phía ngoài (nổi trên nền tối và trên ảnh). Chỗ nào
+cũng còn ít nhất một lớp nhìn rõ. Mở rộng thêm cho `select`, `textarea`,
+`summary`, `[tabindex]`.
+
+**4. Thứ tự tiêu đề nhảy cóc**
+
+Thẻ "Tại sao" dùng `<h4>` ngay sau `<h2>`, bỏ qua `<h3>`. Đổi thành `<h3>`
+(cả `why-section.tsx` lẫn bộ chọn CSS).
+
+### Thuật ngữ
+
+- **Nới vùng bấm bằng `padding` + `margin` âm**: kích thước một phần tử chiếm
+  trong bố cục là *margin box*. Cộng 12px padding rồi trừ 12px margin thì
+  margin box không đổi, nhưng vùng nhận cú chạm đã lớn thêm 24px.
+
+### Lợi ích
+
+Đo trên bản production dựng ở máy, bốn ảnh nền:
+
+| | Trước | Sau |
+|---|---|---|
+| Điện thoại (w=750) | 1.234.418 B | **107.826 B — giảm 91%** |
+| Desktop (w=1920) | 1.234.418 B | **314.632 B — giảm 74%** |
+
+Riêng ảnh hero: 377.459 B → **24.524 B** trên điện thoại, và được `priority`
+nên trình duyệt tải sớm thay vì chờ.
+
+Để so sánh: cả buổi trước đó tôi cắt được 36 KB font và báo cáo như một thắng
+lợi, trong khi ngay cạnh có 1,1 MB ảnh không ai đụng — **tối ưu sai chỗ, gấp
+hơn 30 lần**. Bài học: đo tổng tải trọng trước, rồi mới chọn chỗ để tối ưu.
+
+### Rủi ro
+
+- `next/image` tối ưu ảnh trên máy chủ Vercel và tính vào hạn mức Image
+  Optimization của gói Hobby. Bốn ảnh tĩnh thì không đáng kể.
+- Vành focus dùng `box-shadow`, nên phần tử nào tự đặt `box-shadow` khi
+  hover/focus sẽ đè mất lớp trong (ví dụ ô tìm kiếm đã có hiệu ứng focus
+  riêng). Chấp nhận được: những chỗ đó vốn đã có chỉ báo riêng nhìn thấy được.
+- Còn 14/31 phần tử dưới 44px, chủ yếu là link chữ trong footer (343×21) và
+  nút danh mục (cao 38px). Đều trên mức tối thiểu 24×24 của WCAG 2.5.8 và
+  đều rộng ngang, nên không nâng tiếp — nâng nữa là phá nhịp giao diện.
+
+### Kiểm chứng
+
+- `npm run verify` xanh.
+- `grep background-image app/home.css` → **không còn dòng nào**.
+- Mạng: ảnh hero đi qua `/_next/image?url=...&w=2048&q=75`, trả `image/webp`.
+- Vùng bấm sau khi sửa: **23 → 14** phần tử nhỏ; nút `−`/`+` đo được đúng
+  `44x44`; `VI`/`EN` thành `29x44` và `34x44`; header **vẫn 106.8px**.
+- Thứ tự tiêu đề: `H1>H2>H3>H3>H3>H2>H2>H3...` — không còn nhảy cóc.
+- Bấm Tab 5 lần tới nút "Xem menu hôm nay": `outline: 3px rgb(245,168,0)` +
+  `box-shadow: rgb(30,92,46) 0 0 0 2px`, nhìn rõ trên nền xanh đậm.
