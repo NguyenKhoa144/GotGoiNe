@@ -509,6 +509,20 @@ button.home-nav-search-btn:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
+/* `<strong>` và `<span>` trong thẻ này đều là phần tử inline, nên khi thẻ đủ
+   rộng để chứa cả hai trên một dòng thì chúng dính liền nhau — đọc ra
+   "100% tươi sạchNhập mỗi buổi sáng". Ở màn hẹp chúng tự xuống dòng nên lỗi
+   bị che mất. Cho tiêu đề thành block để luôn có hai dòng. */
+.home-float-tag strong {
+  display: block;
+  line-height: 1.35;
+}
+
+.home-float-tag span {
+  display: block;
+  line-height: 1.35;
+}
+
 .home-float-tag-1 {
   top: 48px;
   right: 24px;
@@ -1341,6 +1355,14 @@ button.home-nav-search-btn:hover {
     align-items: flex-start;
   }
 
+  /* Xếp dọc + `align-items: flex-start` nghĩa là khối chữ tự co theo nội dung
+     chứ không theo khung, nên ở 320px nó rộng 306px trong khung 288px — chữ
+     chạm sát mép phải và thừa 2px ra ngoài màn. `max-width: 540px` ở quy tắc
+     gốc vẫn chặn trên cho tablet. */
+  .home-hero-left {
+    width: 100%;
+  }
+
   .home-why-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1648,5 +1670,54 @@ button.home-nav-search-btn:hover {
     padding: 18px 16px;
     flex-direction: column;
     text-align: center;
+  }
+}
+
+/* Màn rất hẹp (iPhone SE đời đầu, nhiều máy Android giá rẻ — 320px).
+   `clamp(38px, 4.5vw, 64px)` có sàn cứng 38px, ở 320px thì 4.5vw chỉ là
+   14.4px nên luôn rơi về sàn — chữ to quá khổ và cụm nghiêng "tươi ngon" bị
+   bẻ làm đôi giữa hai dòng. Chỉ hạ riêng ở đây, không đụng các cỡ màn khác. */
+@media (max-width: 340px) {
+  .home-hero-title {
+    font-size: 30px;
+  }
+}
+
+/* Điện thoại xoay ngang: chiều rộng vượt 700px nên KHÔNG lọt media query
+   mobile ở trên, trang nhận header desktop 131.5px trên màn chỉ cao 375px —
+   chiếm 35% chiều cao. Thu gọn theo CHIỀU CAO, không theo chiều rộng. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .home-nav-top {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .home-nav-logo-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .home-nav-logo-text strong {
+    font-size: 13px;
+  }
+
+  .home-nav-logo-text span {
+    font-size: 9px;
+  }
+
+  .home-nav-cats {
+    padding-bottom: 8px;
+  }
+
+  .home-cat-pill {
+    padding: 6px 14px;
+    font-size: 12.5px;
+  }
+
+  /* Hero cao 88vh trên màn ngang thấp thì chữ và nút bị ép sát nhau. */
+  .home-hero-content {
+    padding-top: 28px;
+    padding-bottom: 28px;
   }
 }

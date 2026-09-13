@@ -1841,3 +1841,89 @@ chứ không chỉ ở dev server.
 Kiểm chứng sau khi sửa (375×812): `flexBasis: 100%`, ô rộng **343px**,
 `top: 58px` (tức đã ở hàng riêng, không còn nằm hàng đầu), header 164.75px khi
 mở, gõ `mango` lọc còn 1 loại, không tràn ngang.
+
+## 2026-09-13 - Rà giao diện trên nhiều cỡ màn: 4 lỗi tìm thấy và sửa
+
+### Cập nhật
+
+Người dùng hỏi "đã thử giao diện trên mọi nền tảng chưa" — câu trả lời thật
+là **chưa**: suốt cả đợt tôi chỉ đo hai cỡ (375×812 và ~1024 desktop), trên
+một engine duy nhất (Chromium trong app). Rà lại 8 cỡ màn thì lộ ra 4 lỗi.
+
+**1. Chữ dính liền ở thẻ nổi trên ảnh hero** (lỗi cũ, không do đợt này)
+
+`.home-float-tag` có `<strong>` và `<span>` đều `display: inline`, không có gì
+ngăn cách. Khi thẻ đủ rộng để chứa cả hai trên một dòng thì đọc ra
+`100% tươi sạchNhập mỗi buổi sáng`. Ở màn hẹp chúng tự xuống dòng nên lỗi bị
+che. Xuất hiện từ ~390px trở lên. Sửa: cho cả hai `display: block`.
+
+**2. Điện thoại xoay ngang: header chiếm 35% chiều cao** (thiếu sót của tôi ở
+bước 1 đợt này)
+
+Phần thu gọn header chỉ gắn vào `@media (max-width: 700px)`. Xoay ngang thì
+chiều rộng là 812px nên **không lọt** media query đó — trang nhận header
+desktop 131.5px trên màn cao 375px. Sửa: thêm
+`@media (max-height: 480px) and (orientation: landscape)` thu gọn theo
+**chiều cao**, không theo chiều rộng.
+
+**3. Tiêu đề hero quá khổ ở màn 320px**
+
+`clamp(38px, 4.5vw, 64px)`: ở 320px thì `4.5vw` chỉ là 14.4px nên luôn rơi về
+sàn cứng 38px, cụm chữ nghiêng "tươi ngon" bị bẻ làm đôi giữa hai dòng. Sửa:
+`@media (max-width: 340px) { font-size: 30px }`.
+
+**4. Khối chữ hero rộng hơn khung ở màn hẹp** (phát hiện trong lúc kiểm chứng
+ba lỗi trên)
+
+Ở ≤1100px `.home-hero-content` chuyển `flex-direction: column` +
+`align-items: flex-start`, nghĩa là khối con tự co theo **nội dung** chứ không
+theo khung. Ở 320px nó rộng 306px trong khung 288px — chữ chạm sát mép phải và
+thừa 2px ra ngoài màn. Sửa: `.home-hero-left { width: 100% }` trong media
+query đó; `max-width: 540px` ở quy tắc gốc vẫn chặn trên cho tablet.
+
+### Thuật ngữ
+
+- **`align-items: flex-start` trong flex column**: quyết định bề ngang của các
+  khối con. `flex-start` = tự co theo nội dung; `stretch` (mặc định) = bằng
+  khung. Đây là lý do một khối con có thể rộng hơn cha mà không ai ngờ.
+- **Media query theo chiều cao**: `max-width` không bắt được điện thoại xoay
+  ngang, vì lúc đó chiều rộng lớn còn chiều cao mới là thứ khan hiếm.
+
+### Rủi ro
+
+- Lần đầu tôi đặt breakpoint của lỗi #3 ở `max-width: 380px`, tức **375px
+  cũng bị hạ xuống 30px** — mà 375px (iPhone SE 2/3, iPhone 12 mini) vốn
+  không có lỗi, ảnh chụp trước đó cho thấy chữ xuống dòng đẹp. Đã siết về
+  `340px` để chỉ chạm đúng nhóm màn thật sự hỏng.
+- Header xoay ngang giảm từ 35% xuống **28%** chiều cao, chưa phải lý tưởng.
+  Muốn thấp hơn nữa phải giấu chữ logo hoặc gộp hai hàng — đổi thiết kế thật,
+  không gộp vào đợt sửa lỗi này.
+
+### Kiểm chứng
+
+Đo trên 8 cỡ, **không cỡ nào tràn ngang**:
+
+| Cỡ | Header | Tiêu đề hero | Khối chữ hero | Thẻ nổi |
+|---|---|---|---|---|
+| 320×568 | 106.8px | 30px | 288px (khớp khung) | 2 dòng |
+| 360×800 | 106.8px | 38px (giữ nguyên) | — | 2 dòng |
+| 375×812 | 106.8px | 38px (giữ nguyên) | 343px | 2 dòng |
+| 768×1024 | 131.5px | 38px | 540px (chặn trên) | 2 dòng |
+| 1440×900 | 131.5px | 64px | 540px | 2 dòng |
+| 812×375 ngang | **104.8px (28%)** | — | — | — |
+
+- Chế độ tối (`prefers-color-scheme: dark`): trang giữ nền sáng
+  `rgb(248,253,247)`, `color-scheme: light` — **đúng thiết kế**, không lỗi.
+- `npm run verify` xanh.
+
+### Chưa kiểm được — ghi lại để không quên
+
+- **Safari/iOS thật**: `mcp__Claude_Code_iOS_Simulator` báo *Xcode đã cài
+  nhưng chưa được chọn*, cần `sudo xcode-select -s
+  /Applications/Xcode.app/Contents/Developer` — lệnh cần mật khẩu máy, phải
+  nhờ người dùng. **Đáng làm**: repo này từng dính một lỗi chỉ Safari mới có
+  (bo góc + `overflow:hidden`, mục 2026-07-23), và ô tìm kiếm mới dùng
+  `-webkit-search-cancel-button`.
+- Android Chrome và Firefox thật.
+- `prefers-reduced-motion` (CSS có xử lý, chưa giả lập được).
+- Các trang admin ở cỡ màn khác desktop.
