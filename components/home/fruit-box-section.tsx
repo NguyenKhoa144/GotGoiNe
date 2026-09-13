@@ -30,7 +30,6 @@ export function FruitBoxSection({ activeCategory, items }: FruitBoxSectionProps)
     return () => clearTimeout(timer);
   }, [showToast]);
 
-  const size = content.sizes.find((s) => s.id === sizeId) ?? content.sizes[0];
   const selectedTypes = Object.values(qty).filter((n) => n > 0).length;
 
   const changeQty = (itemId: string, delta: number) => {
@@ -60,12 +59,8 @@ export function FruitBoxSection({ activeCategory, items }: FruitBoxSectionProps)
                   onClick={() => setSizeId(s.id)}
                   aria-pressed={s.id === sizeId}
                 >
-                  <span
-                    className="home-fruitbox-size-icon"
-                    style={{ fontSize: `${18 + index * 8}px` }}
-                    aria-hidden="true"
-                  >
-                    <Package size={22} aria-hidden="true" />
+                  <span className="home-fruitbox-size-icon" aria-hidden="true">
+                    <Package size={20 + index * 5} strokeWidth={1.8} />
                   </span>
                   <span className="home-fruitbox-size-name">{s.label}</span>
                   <span className="home-fruitbox-size-meta">{s.weightLabel}</span>
@@ -73,9 +68,15 @@ export function FruitBoxSection({ activeCategory, items }: FruitBoxSectionProps)
               ))}
             </div>
 
-            <p className="home-fruitbox-hint">
-              {items.length === 0 ? t.emptyToday : t.pickInstructions}
-            </p>
+            {items.length === 0 ? (
+              <div className="home-fruitbox-empty">
+                <Package size={30} strokeWidth={1.6} aria-hidden="true" />
+                <strong>{t.emptyToday}</strong>
+                <p>{t.emptyHint}</p>
+              </div>
+            ) : (
+              <p className="home-fruitbox-hint">{t.pickInstructions}</p>
+            )}
 
             <div className="home-fruitbox-items">
               {items.map((item) => {

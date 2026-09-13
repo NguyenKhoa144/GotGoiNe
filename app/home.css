@@ -888,6 +888,34 @@ input:focus-visible {
   object-fit: cover;
 }
 
+.home-fruitbox-empty {
+  margin: 26px 0 4px;
+  padding: 30px 24px;
+  border: 1px dashed rgba(30, 92, 46, 0.24);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  color: var(--green-dark);
+}
+
+.home-fruitbox-empty svg {
+  display: block;
+  margin: 0 auto;
+}
+
+.home-fruitbox-empty strong {
+  display: block;
+  margin: 12px 0 6px;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.home-fruitbox-empty p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
 .home-fruitbox-hint {
   font-size: 12px;
   color: var(--text-muted);
@@ -1309,8 +1337,39 @@ input:focus-visible {
     font-size: 12.5px;
   }
 
+  /* Trên điện thoại chữ hero nằm đè lên chỗ ảnh sáng nhất (múi cam, thịt
+     dưa), lớp phủ dọc mặc định chưa đủ tối ở nửa trên. Đậm thêm riêng cho
+     màn hẹp, desktop giữ nguyên. */
+  .home-hero-scrim {
+    background: linear-gradient(
+      to top,
+      rgba(10, 18, 12, 0.86) 0%,
+      rgba(10, 18, 12, 0.55) 45%,
+      rgba(10, 18, 12, 0.24) 78%,
+      rgba(10, 18, 12, 0.1) 100%
+    );
+  }
+
   .home-hero-content {
     padding: 48px 16px;
+  }
+
+  /* Các section đang cách nhau 88px trên mọi cỡ màn. Trên điện thoại đó là
+     hơn 10% chiều cao màn hình cho mỗi khoảng trắng, khách phải cuộn rất lâu
+     mới tới phần bán hàng. */
+  .home-products-section,
+  .home-fruitbox-section {
+    padding-top: 56px;
+    padding-bottom: 56px;
+  }
+
+  .home-why-section {
+    padding-top: 56px;
+    padding-bottom: 56px;
+  }
+
+  .home-how-section {
+    padding-top: 56px;
   }
 
   .home-hero-right {

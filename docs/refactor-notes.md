@@ -1291,3 +1291,113 @@ cho khu "Tự tay ghép hộp".
   hiệu ứng trượt 320ms, trông như một chấm tròn lệch — **không phải lỗi**.
   Cùng họ với ghi chú hiệu ứng của khung xem trước đã ghi trước đây; đo bằng
   `getBoundingClientRect` mới là số thật.
+
+## 2026-09-13 - Font tiếng Việt, icon SVG và nhịp trang trên điện thoại (mục A, bước 2-4)
+
+Ba bước còn lại của đợt rà soát giao diện mở đầu bằng header (bước 1 ở mục
+trên). Mỗi bước một commit riêng.
+
+### Cập nhật
+
+**Bước 2 - font (`bd2d776`)**
+
+`body` đang đặt `font-family: Arial, Helvetica, sans-serif`, và biến
+`--font-geist-sans` mà `globals.css` trỏ tới **chưa bao giờ được định nghĩa**
+— dự án không nạp font nào cả. Đã nạp **Be Vietnam Pro** qua
+`next/font/google`, subset `["latin", "vietnamese"]`, sáu độ đậm 400-900
+(đúng các mức mà CSS đang dùng, đếm bằng `grep`), `display: "swap"`, gắn vào
+`<html>` qua biến `--font-sans-vn`.
+
+**Bước 3 - icon (`e87ae6d`)**
+
+Thêm `components/home/section-icon.tsx`: một bản đồ tên → icon `lucide-react`,
+xuất kiểu `SectionIconName` dùng luôn làm kiểu cho trường `icon` trong
+`data/home.ts`, nên gõ sai tên icon là TypeScript báo lỗi ngay.
+
+- ⏱️ 🛡️ 🌿 🔪 📦 🛵 → `Clock` `ShieldCheck` `Leaf` `Slice` `Package` `Bike`.
+- ✓ và ＋ ở nút thêm → `Check` và `Plus`.
+- 🔍 ở nút tìm kiếm → `Search` (đã làm ở bước 1).
+- Bỏ emoji mở đầu trong các chuỗi hiển thị (🚀 🍉 🌿 🛒 📦), cả VI lẫn EN.
+
+**Bước 4 - nhịp trang, nền chữ hero, trạng thái rỗng (commit này)**
+
+- Trong `@media (max-width: 700px)`: `.home-products-section`,
+  `.home-fruitbox-section`, `.home-why-section`, `.home-how-section` giảm
+  padding dọc **88px → 56px**.
+- Lớp phủ hero (`.home-hero-scrim`) đậm thêm riêng cho màn hẹp: bốn chặng
+  0.86 / 0.55 / 0.24 / 0.1 thay vì ba chặng 0.82 / 0.28 / 0.
+- Khu "Tự tay ghép hộp" khi hết hàng: thay dòng chữ xám 12px bằng khối
+  `.home-fruitbox-empty` có khung nét đứt, icon, tiêu đề và câu giải thích.
+  Tách chuỗi thành `emptyToday` (tiêu đề ngắn) + `emptyHint` (câu giải thích),
+  viết cả VI lẫn EN.
+- Icon cỡ hộp giờ to dần bằng chính `size` của icon (`20 + index * 5`) thay
+  vì `style={{ fontSize }}` — thuộc tính đó chỉ có tác dụng với emoji, để lại
+  sau khi đổi sang SVG là code chết.
+
+### Thuật ngữ
+
+- **Subset `vietnamese`**: Google Fonts cắt file font thành từng mảng ký tự.
+  Không khai `vietnamese` thì các nguyên âm hai dấu (ế, ộ, ữ) không có trong
+  file, trình duyệt phải mượn font khác — chính là cảnh chữ bị lệch dấu.
+- **`display: "swap"`**: hiện tạm bằng font dự phòng rồi đổi sang font thật
+  khi tải xong, thay vì để chữ vô hình trong lúc chờ.
+- **Tailwind Preflight**: bộ reset CSS Tailwind nạp sẵn, trong đó có việc đưa
+  `h1`-`h6` về **cùng cỡ chữ và độ đậm với đoạn văn**. Đó là lý do `<h4>`
+  trong thẻ "Tại sao" trông y hệt phần mô tả — không phải lỗi mới, chỉ là
+  chưa ai viết quy tắc cho nó.
+
+### Công dụng
+
+Chữ tiếng Việt dựng đúng dấu; icon giống nhau trên iPhone, Android và
+Windows; khách trên điện thoại cuộn ít hơn để tới phần bán hàng; và khi trong
+tủ hết trái cây thì khu ghép hộp nói rõ chuyện gì đang xảy ra thay vì trông
+như hỏng.
+
+### Lợi ích
+
+- `emptyToday` + `emptyHint` tách đôi nên hai ngôn ngữ có cùng cấu trúc, thêm
+  ngôn ngữ thứ ba không phải viết lại bố cục.
+- `SectionIconName` siết kiểu, không còn dán chuỗi emoji tuỳ ý vào dữ liệu.
+- Sau bước này `npm run lint` **sạch hoàn toàn** — cảnh báo cũ `'size' is
+  assigned a value but never used` ở `fruit-box-section.tsx` là một biến chết
+  thật, đã xoá.
+
+### Rủi ro
+
+- **Không đổi tên danh mục và emoji trái cây.** `PRODUCT_CATEGORIES` chính là
+  `homeContent.vi.categories`, và `AGENTS.md` ghi rõ chuỗi danh mục là khoá
+  nối giữa admin và tab lọc trang chủ — sửa "🔥 Hộp cắt sẵn" là gãy liên kết
+  với dữ liệu đã lưu trong DB. Emoji trái cây (🥭 🍉 🍍) trong
+  `data/fruit-box.ts`, `data/home.ts`, `data/poster.ts` là **nội dung**, không
+  phải icon giao diện, nên giữ nguyên.
+- Font thêm một lượt tải mạng. `next/font` tự host file trên chính tên miền
+  nên không có lượt truy vấn sang Google, nhưng lần vào đầu tiên vẫn nặng hơn
+  Arial (vốn có sẵn trong máy).
+- Đổi font làm mọi chữ rộng/cao khác đi một chút; đã soát lại hero, thẻ "Tại
+  sao", dải danh mục và khu ghép hộp ở cả hai cỡ màn, không thấy chỗ nào tràn.
+
+### Quản trị rủi ro
+
+Ba bước là ba commit độc lập, quay lui từng bước được. Không đụng schema, dữ
+liệu, hay bất kỳ file nào trong `lib/stock.ts` / `lib/products.ts`.
+
+### Hướng phát triển
+
+Mục A đã xong. Các hướng thiết kế còn lại đã đề xuất với anh, theo thứ tự:
+dựng lại "Menu hôm nay" theo lưới bento, rồi thêm bản sắc nét vẽ tay
+(Human Scribble) cho thương hiệu. Ngoài ra còn treo: ô tìm kiếm ở header vẫn
+chưa nối dữ liệu (đang ẩn trên điện thoại), và `--font-mono:
+var(--font-geist-mono)` trong `globals.css` vẫn trỏ vào một biến không tồn
+tại — vô hại vì không chỗ nào dùng chữ mono, nhưng nên dọn khi tiện.
+
+### Kiểm chứng
+
+- `npm run verify` xanh, **không còn cảnh báo nào**.
+- `getComputedStyle(document.body).fontFamily` trả
+  `"Be Vietnam Pro", "Be Vietnam Pro Fallback", "Segoe UI", system-ui,
+  sans-serif`.
+- Ở 375×812: padding dọc của cả ba section đo được `56px`, header `106.75px`,
+  icon trong khối rỗng căn giữa đúng (`iconCentered: true`), nội dung khối
+  rỗng đọc được đủ hai dòng.
+- Ở cỡ desktop: padding vẫn `88px`, `.home-hero-scrim` vẫn là gradient cũ
+  (`rgba(10, 18, 12, 0.82)` ở chặng đầu) — media query không rò sang.

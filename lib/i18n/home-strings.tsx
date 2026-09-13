@@ -44,6 +44,7 @@ type HomeStrings = {
     comingSoonTitle: string;
     comingSoonDesc: string;
     emptyToday: string;
+    emptyHint: string;
   };
   how: {
     eyebrow: string;
@@ -130,7 +131,8 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       ctaButton: "Đặt hộp này",
       comingSoonTitle: "Sắp ra mắt!",
       comingSoonDesc: "Tính năng đặt hộp tự chọn đang được hoàn thiện - theo dõi Gọt Gòi Nè để là người đặt đầu tiên nhé.",
-      emptyToday: "Hôm nay chưa có trái cây nào để ghép hộp - quay lại sau nha!",
+      emptyToday: "Hôm nay chưa có trái cây để ghép hộp",
+      emptyHint: "Bếp đang chốt nguyên liệu trong ngày - ghé lại sau một chút nha!",
     },
     how: {
       eyebrow: "Quy trình",
@@ -215,7 +217,8 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       ctaButton: "Order this box",
       comingSoonTitle: "Coming soon!",
       comingSoonDesc: "The build-your-own box feature is still in the works - follow Gọt Gòi Nè to be first in line.",
-      emptyToday: "No fruit available to build a box today - check back soon!",
+      emptyToday: "No fruit to build a box today",
+      emptyHint: "The kitchen is still picking today's produce - check back in a bit!",
     },
     how: {
       eyebrow: "Our process",
