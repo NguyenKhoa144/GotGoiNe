@@ -586,6 +586,9 @@ input:focus-visible {
   color: var(--green-dark);
 }
 
+/* Cùng nguyên tắc bento với lưới trái cây hôm nay: ảnh tràn hết bề ngang ô,
+   ô nổi bật rộng gấp đôi. Trước đây ảnh bị bó trong khung 190px giữa một thẻ
+   trắng đầy chữ — ảnh trái cây gần như không có tiếng nói. */
 .home-products-bento {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -596,13 +599,18 @@ input:focus-visible {
 .home-product-card {
   background: white;
   border-radius: var(--r-md);
-  padding: 28px;
+  overflow: hidden;
   border: 1px solid var(--border);
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  min-height: 230px;
+}
+
+.home-p-body {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  padding: 18px 20px 20px;
 }
 
 .home-product-card:hover,
@@ -628,7 +636,7 @@ input:focus-visible {
 }
 
 .home-product-card.home-featured {
-  grid-row: span 2;
+  grid-column: span 2;
   background: var(--green-dark);
 }
 
@@ -663,13 +671,12 @@ input:focus-visible {
 }
 
 .home-p-emoji {
-  font-size: 52px;
-  display: block;
-  margin-bottom: 14px;
+  font-size: 56px;
+  line-height: 1;
 }
 
 .home-featured .home-p-emoji {
-  font-size: 80px;
+  font-size: 88px;
 }
 
 /* Ảnh thật thay cho emoji. Khung vuông cố định để thẻ nào cũng cùng chiều
@@ -677,18 +684,20 @@ input:focus-visible {
    này chỉ để phòng những ảnh cũ dán bằng link ngoài. */
 .home-p-photo {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  aspect-ratio: 1 / 1;
-  max-width: 190px;
-  margin: 0 auto 14px;
-  border-radius: var(--r-md);
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background: rgba(30, 92, 46, 0.06);
+  /* Nở ra chiếm phần dư khi ô bị kéo cao bằng ô nổi bật cùng hàng. */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .home-featured .home-p-photo {
-  max-width: 260px;
+  aspect-ratio: 16 / 9;
 }
 
 .home-p-photo img {
@@ -714,6 +723,7 @@ input:focus-visible {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  margin-top: auto;
 }
 
 .home-p-price {
@@ -744,9 +754,13 @@ input:focus-visible {
 
 .home-p-desc {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-muted);
   line-height: 1.65;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+}
+
+.home-featured .home-p-desc {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .home-fruitbox-section {
@@ -825,9 +839,13 @@ input:focus-visible {
   color: rgba(255, 255, 255, 0.7);
 }
 
+/* Lưới bento cho trái cây hôm nay: ô đầu tiên rộng gấp đôi để ảnh trái cây
+   — thứ bán hàng mạnh nhất của một tiệm trái cây — có chỗ thở, các ô còn lại
+   xếp đều quanh nó. Trước đây mọi ô giống hệt nhau và ảnh chỉ là một vòng
+   tròn 72px, ảnh thật gần như không nhìn ra. */
 .home-fruitbox-items {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
 
@@ -835,13 +853,24 @@ input:focus-visible {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 6px;
-  padding: 20px 14px 16px;
+  overflow: hidden;
   border-radius: var(--r-md);
   border: 1.5px solid var(--border);
   background: white;
+}
+
+.home-fruitbox-item.home-is-wide {
+  grid-column: span 2;
+}
+
+.home-fruitbox-item-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 12px 12px 14px;
+  flex: 0 0 auto;
 }
 
 .home-fruitbox-item:hover {
@@ -856,8 +885,9 @@ input:focus-visible {
 
 .home-fruitbox-item-badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -871,17 +901,34 @@ input:focus-visible {
   box-shadow: 0 4px 10px rgba(30, 92, 46, 0.22);
 }
 
+/* Ảnh tràn hết chiều ngang ô thay vì một vòng tròn nhỏ. Khung vuông giữ mọi
+   ô cùng nhịp; ô rộng dùng khung 3:2 để không cao quá so với hàng bên cạnh. */
 .home-fruitbox-item-photo {
   position: relative;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   line-height: 1;
   overflow: hidden;
+  /* Ô nhỏ nằm cùng hàng với ô rộng sẽ bị kéo cao bằng nó. Cho ảnh nở ra
+     chiếm phần dư thay vì để một mảng trắng giữa ảnh và tên trái. */
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.home-is-wide .home-fruitbox-item-photo {
+  aspect-ratio: 3 / 2;
+}
+
+/* Dự phòng khi loại trái đó chưa có ảnh thật: emoji to trên nền màu. */
+.home-fruitbox-item-emoji {
+  font-size: 44px;
+}
+
+.home-is-wide .home-fruitbox-item-emoji {
+  font-size: 64px;
 }
 
 .home-fruitbox-item-img {
@@ -1376,17 +1423,38 @@ input:focus-visible {
     padding: 28px 8px;
   }
 
-  .home-why-grid,
-  .home-products-bento {
+  .home-why-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* Giữ hai cột trên điện thoại cho giống lưới trái cây hôm nay; ô nổi bật
+     vẫn trải hết chiều ngang. */
+  .home-products-bento {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
   .home-fruitbox-sizes {
     flex-direction: column;
   }
 
+  /* Điện thoại chỉ đủ chỗ cho hai cột; ô đầu tiên trải hết chiều ngang. */
+  .home-fruitbox-items {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .home-is-wide .home-fruitbox-item-photo {
+    aspect-ratio: 16 / 9;
+  }
+
   .home-product-card.home-featured {
     grid-row: auto;
+    grid-column: span 2;
+  }
+
+  .home-p-body {
+    padding: 14px 14px 16px;
   }
 
   .home-cta-banner {

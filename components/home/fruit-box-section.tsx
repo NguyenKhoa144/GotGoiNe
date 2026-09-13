@@ -79,11 +79,13 @@ export function FruitBoxSection({ activeCategory, items }: FruitBoxSectionProps)
             )}
 
             <div className="home-fruitbox-items">
-              {items.map((item) => {
+              {items.map((item, index) => {
                 const current = qty[item.id] ?? 0;
                 return (
                   <div
-                    className={`home-fruitbox-item${current > 0 ? " home-is-selected" : ""}`}
+                    className={`home-fruitbox-item${current > 0 ? " home-is-selected" : ""}${
+                      index === 0 ? " home-is-wide" : ""
+                    }`}
                     key={item.id}
                   >
                     {current > 0 ? (
@@ -100,14 +102,17 @@ export function FruitBoxSection({ activeCategory, items }: FruitBoxSectionProps)
                           src={item.image}
                           alt=""
                           fill
-                          sizes="72px"
+                          sizes={index === 0 ? "(max-width: 700px) 100vw, 380px" : "(max-width: 700px) 50vw, 190px"}
                           className="home-fruitbox-item-img"
                           unoptimized={!isOptimizableImage(item.image)}
                         />
                       ) : (
-                        <span aria-hidden="true">{item.emoji}</span>
+                        <span className="home-fruitbox-item-emoji" aria-hidden="true">
+                          {item.emoji}
+                        </span>
                       )}
                     </span>
+                    <div className="home-fruitbox-item-body">
                     <span className="home-fruitbox-item-name">{item.name}</span>
                     <div className="home-fruitbox-stepper">
                       <button
@@ -128,6 +133,7 @@ export function FruitBoxSection({ activeCategory, items }: FruitBoxSectionProps)
                       >
                         ＋
                       </button>
+                    </div>
                     </div>
                   </div>
                 );

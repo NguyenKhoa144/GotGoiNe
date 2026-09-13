@@ -1401,3 +1401,86 @@ tại — vô hại vì không chỗ nào dùng chữ mono, nhưng nên dọn kh
   rỗng đọc được đủ hai dòng.
 - Ở cỡ desktop: padding vẫn `88px`, `.home-hero-scrim` vẫn là gradient cũ
   (`rgba(10, 18, 12, 0.82)` ở chặng đầu) — media query không rò sang.
+
+## 2026-09-13 - Lưới bento cho trái cây hôm nay và lưới sản phẩm (hướng 3)
+
+### Cập nhật
+
+Đọc kỹ `home-content.tsx` mới thấy một điều quan trọng trước đó đã hiểu sai:
+**"Menu hôm nay" mà khách thực sự nhìn thấy không phải `ProductsSection`.**
+Danh mục đầu tiên ("🔥 Hộp cắt sẵn") — danh mục mặc định khi mở trang, nơi
+trái cây trong tủ hiện ra — dùng `FruitBoxSection`; `ProductsSection` chỉ chạy
+cho ba danh mục còn lại. Nên đợt này làm bento cho **cả hai** lưới, theo cùng
+một nguyên tắc.
+
+**Lưới trái cây hôm nay (`FruitBoxSection`)**
+
+- `.home-fruitbox-items`: 2 cột → **3 cột** trên desktop, giữ 2 cột trên điện
+  thoại.
+- Ô đầu tiên nhận class `home-is-wide` (`grid-column: span 2`) — đó là nhịp
+  bento: một ô lớn dẫn dắt, các ô nhỏ xếp quanh.
+- `.home-fruitbox-item-photo`: từ vòng tròn **72px** thành ảnh **tràn hết bề
+  ngang ô**, khung 1:1 (ô rộng 3:2 trên desktop, 16:9 trên điện thoại).
+- Tên trái + bộ tăng giảm chuyển xuống khối `.home-fruitbox-item-body` riêng.
+- `sizes` của `next/image` khai theo từng cỡ ô, không còn cứng `72px`.
+
+**Lưới sản phẩm (`ProductsSection`)**
+
+- Ảnh ra khỏi khối chữ, tràn hết bề ngang ô (khung 4:3; ô nổi bật 16:9), thay
+  cho khung bó `max-width: 190px` nằm giữa thẻ.
+- Chữ gom vào `.home-p-body`; nút thêm đẩy xuống đáy bằng `margin-top: auto`.
+- Ô nổi bật đổi từ `grid-row: span 2` sang **`grid-column: span 2`** — cao gấp
+  đôi làm vỡ nhịp hàng, rộng gấp đôi thì không.
+- Điện thoại: 1 cột → **2 cột**, cho khớp nhịp với lưới trái cây.
+
+### Thuật ngữ
+
+- **Bento grid**: bố cục chia thành các ô chữ nhật to nhỏ khác nhau như hộp
+  cơm Nhật, thay vì lưới đều tăm tắp. Đang là xu hướng 2026 vì vừa tạo điểm
+  nhìn vừa xếp gọn lại được trên điện thoại.
+- **`flex: 1 1 auto` trên khung ảnh**: ô nhỏ nằm cùng hàng với ô rộng bị lưới
+  kéo cao bằng nó. Nếu ảnh giữ đúng tỷ lệ cố định thì phần dư biến thành một
+  mảng trắng giữa ảnh và tên trái. Cho khung ảnh nở ra chiếm phần dư thì mọi ô
+  trong hàng đều đầy.
+
+### Công dụng
+
+Ảnh trái cây thật — tài sản bán hàng mạnh nhất của một tiệm trái cây — chiếm
+phần lớn diện tích ô, thay vì bị bó trong một vòng tròn 72px hoặc một khung
+190px giữa thẻ trắng đầy chữ.
+
+### Lợi ích
+
+Hai lưới giờ cùng một ngôn ngữ thị giác (ảnh tràn ô, ô đầu rộng gấp đôi, 2 cột
+trên điện thoại), nên trang đọc như một hệ thống chứ không phải hai khu rời.
+
+### Rủi ro
+
+- **Ảnh thật giờ quan trọng hơn hẳn.** Loại trái chưa có ảnh sẽ hiện một ô
+  lớn nền màu với emoji ở giữa — chấp nhận được nhưng rõ ràng kém ảnh thật.
+  Điều này làm việc bật Vercel Blob (`BLOB_READ_WRITE_TOKEN`, vẫn đang treo)
+  đáng làm sớm hơn trước.
+- Ô đầu tiên luôn là ô rộng, chọn theo **vị trí** chứ không theo dữ liệu. Khi
+  nào muốn chủ shop tự chỉ định "trái nổi bật hôm nay" thì cần thêm một cột
+  trong DB — chưa làm, vì chưa ai yêu cầu.
+- `.home-product-card.home-featured` vốn dành cho danh mục "Hộp cắt sẵn", mà
+  danh mục đó lại render `FruitBoxSection` — nên trên dữ liệu tĩnh tiếng Anh
+  hiện nay **không ô nào thật sự nổi bật**. CSS đã sẵn sàng cho khi admin đánh
+  dấu nổi bật một sản phẩm ở ba danh mục kia.
+
+### Quản trị rủi ro
+
+Chỉ đụng CSS và JSX hiển thị của hai component; không đụng schema, `lib/stock.ts`,
+`lib/products.ts` hay bất kỳ đường ghi dữ liệu nào.
+
+### Kiểm chứng
+
+- `npm run verify` xanh, không cảnh báo.
+- Kiểm tra bằng cách **gắn tạm ba ảnh trong `public/images` vào `EN_PRODUCTS`
+  ở máy cá nhân** rồi xem ở cả hai cỡ màn — **không ghi gì vào cơ sở dữ liệu**,
+  vì production, preview và dev dùng chung một DB Neon. Đã khôi phục
+  `data/home.ts` về nguyên trạng sau khi xem (`git diff` trống).
+- Desktop: ô rộng và ô thường cùng hàng, không còn mảng trắng giữa ảnh và tên.
+- 375×812: `.home-fruitbox-items` và `.home-products-bento` đều đo được
+  `165.5px 165.5px` (2 cột), `scrollWidth` không vượt `innerWidth` — trang
+  không tràn ngang.

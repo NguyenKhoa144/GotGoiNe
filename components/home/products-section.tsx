@@ -38,32 +38,38 @@ export function ProductsSection({
                 className={`home-product-card${product.featured ? " home-featured" : ""}`}
                 key={product.id}
               >
-                <div>
-                  {product.badge ? <div className="home-p-badge">{product.badge}</div> : null}
+                {product.badge ? <div className="home-p-badge">{product.badge}</div> : null}
+                <span className="home-p-photo">
                   {product.imageUrl ? (
-                    <span className="home-p-photo">
-                      <Image
-                        src={product.imageUrl}
-                        alt=""
-                        fill
-                        sizes="(max-width: 700px) 45vw, 260px"
-                        unoptimized={!isOptimizableImage(product.imageUrl)}
-                      />
-                    </span>
+                    <Image
+                      src={product.imageUrl}
+                      alt=""
+                      fill
+                      sizes={
+                        product.featured
+                          ? "(max-width: 700px) 100vw, 520px"
+                          : "(max-width: 700px) 50vw, 260px"
+                      }
+                      unoptimized={!isOptimizableImage(product.imageUrl)}
+                    />
                   ) : (
-                    <span className="home-p-emoji">{product.emoji}</span>
+                    <span className="home-p-emoji" aria-hidden="true">
+                      {product.emoji}
+                    </span>
                   )}
+                </span>
+                <div className="home-p-body">
                   <div className="home-p-name">{product.name}</div>
                   {product.description ? <p className="home-p-desc">{product.description}</p> : null}
-                </div>
-                <div className="home-p-footer">
-                  <button
-                    className={`home-p-add${flash === product.id ? " home-is-done" : ""}`}
-                    onClick={() => onAdd(product.id)}
-                    aria-label={`${t.addAriaPrefix}${product.name}`}
-                  >
-                    {flash === product.id ? <Check size={18} /> : <Plus size={18} />}
-                  </button>
+                  <div className="home-p-footer">
+                    <button
+                      className={`home-p-add${flash === product.id ? " home-is-done" : ""}`}
+                      onClick={() => onAdd(product.id)}
+                      aria-label={`${t.addAriaPrefix}${product.name}`}
+                    >
+                      {flash === product.id ? <Check size={18} /> : <Plus size={18} />}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
