@@ -1,7 +1,18 @@
 import type { Metadata, Viewport } from "next";
+import { Be_Vietnam_Pro } from "next/font/google";
 import { Analytics } from "@/components/analytics";
 import "./globals.css";
 import "./home.css";
+
+// Be Vietnam Pro được thiết kế riêng cho tiếng Việt: dấu thanh và dấu mũ
+// được vẽ sẵn cho từng nguyên âm, không bị chồng lên nhau như khi trình duyệt
+// tự ghép dấu bằng Arial. Chỉ nạp đúng các độ đậm mà CSS đang dùng.
+const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  display: "swap",
+  variable: "--font-sans-vn",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://gotgoine.vercel.app"),
@@ -67,7 +78,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className="h-full antialiased bg-[#f8fdf7]">
+    <html lang="vi" className={`h-full antialiased bg-[#f8fdf7] ${beVietnamPro.variable}`}>
       <body className="min-h-dvh flex flex-col bg-[#f8fdf7] text-neutral-900">
         <script
           type="application/ld+json"
