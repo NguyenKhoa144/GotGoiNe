@@ -1,5 +1,6 @@
 "use client";
 
+import { Bike, Check, Plus } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
 import type { HeroStat } from "@/data/home";
@@ -19,7 +20,10 @@ export function Hero({ stats, flash, onAdd }: HeroProps) {
       <div className="home-hero-scrim" />
       <div className="home-hero-content">
         <div className="home-hero-left">
-          <div className="home-hero-badge">{t.badge}</div>
+          <div className="home-hero-badge">
+            <Bike size={15} aria-hidden="true" />
+            {t.badge}
+          </div>
           <h1 className="home-hero-title">
             {t.titleLine1}
             <br />
@@ -63,7 +67,7 @@ export function Hero({ stats, flash, onAdd }: HeroProps) {
                 onClick={() => onAdd("hero")}
                 aria-label={t.addAria}
               >
-                {flash === "hero" ? "✓" : "＋"}
+                {flash === "hero" ? <Check size={18} /> : <Plus size={18} />}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import type { Lang } from "@/lib/language-context";
+import type { SectionIconName } from "@/components/home/section-icon";
 
 export type HeroStat = {
   value: string;
@@ -6,7 +7,7 @@ export type HeroStat = {
 };
 
 export type WhyReason = {
-  icon: string;
+  icon: SectionIconName;
   title: string;
   description: string;
 };
@@ -32,7 +33,7 @@ export type Product = {
 
 export type ProcessStep = {
   number: string;
-  icon: string;
+  icon: SectionIconName;
   title: string;
   description: string;
 };
@@ -73,19 +74,19 @@ const homeContent: Record<Lang, HomeContent> = {
 
     whyReasons: [
       {
-        icon: "⏱️",
+        icon: "clock",
         title: "Giao nhanh tại Phú Lợi",
         description:
           "30-60 phút nội phường Phú Lợi và các quận lân cận. Có thùng bảo ôn lạnh, trái cây tươi nguyên khi đến tay bạn.",
       },
       {
-        icon: "🛡️",
+        icon: "shield",
         title: "Sạch - Tươi - An toàn",
         description:
           "Gọt tay mỗi sáng, không chất bảo quản. Nguyên liệu nhập từ vườn uy tín, tem ngày trên mỗi hộp.",
       },
       {
-        icon: "🌿",
+        icon: "leaf",
         title: "Giá tốt - Tiện lợi",
         description:
           "Tiết kiệm thời gian gọt rửa. Giá hợp lý, phù hợp văn phòng, gia đình và bữa ăn vặt hàng ngày.",
@@ -95,25 +96,25 @@ const homeContent: Record<Lang, HomeContent> = {
     processSteps: [
       {
         number: "1",
-        icon: "🌿",
+        icon: "leaf",
         title: "Chọn lọc tại vườn",
         description: "Thu hái và chọn lọc kỹ càng từ các vườn uy tín.",
       },
       {
         number: "2",
-        icon: "🔪",
+        icon: "knife",
         title: "Gọt & rửa sạch",
         description: "Gọt vỏ bằng tay, rửa bằng nước sạch không hóa chất.",
       },
       {
         number: "3",
-        icon: "📦",
+        icon: "box",
         title: "Đóng gói lạnh",
         description: "Đóng hộp kín ngay sau khi gọt, bảo quản lạnh.",
       },
       {
         number: "4",
-        icon: "🛵",
+        icon: "scooter",
         title: "Giao tận tay",
         description: "Nhanh, đúng giờ - trái cây tươi nguyên khi đến tay.",
       },
@@ -147,19 +148,19 @@ const homeContent: Record<Lang, HomeContent> = {
 
     whyReasons: [
       {
-        icon: "⏱️",
+        icon: "clock",
         title: "Fast delivery in Phú Lợi",
         description:
           "30-60 minutes within Phú Lợi ward and nearby areas. Delivered in insulated cold boxes so your fruit arrives perfectly fresh.",
       },
       {
-        icon: "🛡️",
+        icon: "shield",
         title: "Clean - Fresh - Safe",
         description:
           "Hand-peeled every morning, no preservatives. Sourced from trusted farms, with a date stamp on every box.",
       },
       {
-        icon: "🌿",
+        icon: "leaf",
         title: "Great Value - Convenient",
         description:
           "Save time on peeling and washing. Reasonable prices, perfect for offices, families, and everyday snacking.",
@@ -169,25 +170,25 @@ const homeContent: Record<Lang, HomeContent> = {
     processSteps: [
       {
         number: "1",
-        icon: "🌿",
+        icon: "leaf",
         title: "Selected at the farm",
         description: "Carefully harvested and selected from trusted farms.",
       },
       {
         number: "2",
-        icon: "🔪",
+        icon: "knife",
         title: "Peeled & washed",
         description: "Hand-peeled and rinsed with clean, chemical-free water.",
       },
       {
         number: "3",
-        icon: "📦",
+        icon: "box",
         title: "Cold-packed",
         description: "Sealed right after peeling and kept chilled.",
       },
       {
         number: "4",
-        icon: "🛵",
+        icon: "scooter",
         title: "Delivered to your door",
         description: "Fast and on time - fruit arrives perfectly fresh.",
       },

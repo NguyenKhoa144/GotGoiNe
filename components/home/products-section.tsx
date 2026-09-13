@@ -1,5 +1,7 @@
 "use client";
 
+import { Check, Plus } from "lucide-react";
+
 import Image from "next/image";
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
@@ -60,7 +62,7 @@ export function ProductsSection({
                     onClick={() => onAdd(product.id)}
                     aria-label={`${t.addAriaPrefix}${product.name}`}
                   >
-                    {flash === product.id ? "✓" : "＋"}
+                    {flash === product.id ? <Check size={18} /> : <Plus size={18} />}
                   </button>
                 </div>
               </div>

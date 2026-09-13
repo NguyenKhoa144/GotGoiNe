@@ -285,6 +285,8 @@ input:focus-visible {
 
 .home-hero-badge {
   display: inline-flex;
+  align-items: center;
+  gap: 7px;
   background: var(--accent-lt);
   border: 1.5px solid rgba(245, 168, 0, 0.45);
   padding: 7px 16px;
@@ -433,7 +435,9 @@ input:focus-visible {
   height: 38px;
   border: none;
   border-radius: 10px;
-  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   line-height: 1;
 }
@@ -579,7 +583,7 @@ input:focus-visible {
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
-  font-size: 28px;
+  color: var(--green-dark);
 }
 
 .home-products-bento {
@@ -602,6 +606,21 @@ input:focus-visible {
 }
 
 .home-product-card:hover,
+/* Tailwind Preflight đặt lại mọi thẻ tiêu đề về cùng cỡ chữ và độ đậm với
+   đoạn văn, nên `<h4>` trong thẻ này trước đây trông y hệt phần mô tả bên
+   dưới — người đọc không phân biệt được đâu là tên lý do. */
+.home-why-card h4 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--green-dark);
+  margin-bottom: 10px;
+}
+
+.home-why-card p {
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
 .home-why-card:hover,
 .home-step-card:hover {
   transform: translateY(-4px);

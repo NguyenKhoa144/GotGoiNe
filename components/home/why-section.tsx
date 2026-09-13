@@ -3,6 +3,7 @@
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
 import type { WhyReason } from "@/data/home";
+import { SectionIcon } from "./section-icon";
 
 type WhySectionProps = {
   reasons: WhyReason[];
@@ -25,7 +26,9 @@ export function WhySection({ reasons }: WhySectionProps) {
         <div className="home-why-grid">
           {reasons.map((reason) => (
             <div className="home-why-card" key={reason.title}>
-              <div className="home-why-icon">{reason.icon}</div>
+              <div className="home-why-icon">
+                <SectionIcon name={reason.icon} />
+              </div>
               <h4>{reason.title}</h4>
               <p>{reason.description}</p>
             </div>

@@ -90,7 +90,7 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       adminLogin: "Đăng nhập quản trị",
     },
     hero: {
-      badge: "🚀 Giao trong 30-60 phút tại Phú Lợi",
+      badge: "Giao trong 30-60 phút tại Phú Lợi",
       titleLine1: (
         <>
           Trái cây <em>tươi ngon</em>,
@@ -103,18 +103,18 @@ export const homeStrings: Record<Lang, HomeStrings> = {
         </>
       ),
       descLine2: "Không cần gọt, không cần rửa. Mở hộp là ăn ngay, tươi sạch mỗi ngày.",
-      ctaPrimary: "🍉 Xem menu hôm nay",
+      ctaPrimary: "Xem menu hôm nay",
       ctaGhost: "Tìm hiểu thêm →",
       cardName: "Dứa mật gọt sẵn",
       cardSub: "Dứa mật ngọt · cắt miếng · 300g",
       cardUnit: "/ hộp 300g",
       addAria: "Thêm dứa mật gọt sẵn",
-      tag1Title: "🌿 100% tươi sạch",
+      tag1Title: "100% tươi sạch",
       tag1Sub: "Nhập mỗi buổi sáng",
       tag2Text: "Đang giao • 14 đơn",
     },
     products: {
-      eyebrow: "🛒 Menu hôm nay",
+      eyebrow: "Menu hôm nay",
       subtitle: "Gọt và đóng gói ngay mỗi buổi sáng - đảm bảo độ tươi tối đa khi đến tay bạn.",
       emptyTitle: "Menu đang được cập nhật",
       emptyDesc: "Danh mục này sẽ có sản phẩm mới sau khi bếp chốt nguyên liệu trong ngày.",
@@ -133,7 +133,7 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       emptyToday: "Hôm nay chưa có trái cây nào để ghép hộp - quay lại sau nha!",
     },
     how: {
-      eyebrow: "📦 Quy trình",
+      eyebrow: "Quy trình",
       titleLine1: "Từ vườn đến tay bạn",
       titleLine2: "trong 4 bước",
       subtitle: "Quy trình chặt chẽ - để mỗi hộp trái cây đến tay bạn đều tươi, sạch và an toàn tuyệt đối.",
@@ -146,7 +146,7 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       subtitle: "Ba lý do đơn giản - nhưng chúng tôi thực hiện mỗi ngày, không ngoại lệ.",
     },
     cta: {
-      heading: "Đặt ngay - nhận trong 30 phút! 🚀",
+      heading: "Đặt ngay - nhận trong 30 phút!",
       subtext: "Miễn phí giao đơn từ 150.000₫ · 7:00 - 20:00",
       button: "Đặt hàng ngay",
     },
@@ -175,7 +175,7 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       adminLogin: "Admin login",
     },
     hero: {
-      badge: "🚀 Delivered in 30-60 minutes in Phú Lợi",
+      badge: "Delivered in 30-60 minutes in Phú Lợi",
       titleLine1: (
         <>
           <em>Fresh</em>, delicious fruit,
@@ -188,18 +188,18 @@ export const homeStrings: Record<Lang, HomeStrings> = {
         </>
       ),
       descLine2: "No peeling, no washing needed. Just open the box and enjoy - fresh every day.",
-      ctaPrimary: "🍉 View today's menu",
+      ctaPrimary: "View today's menu",
       ctaGhost: "Learn more →",
       cardName: "Ready-cut Honey Pineapple",
       cardSub: "Sweet honey pineapple · cut pieces · 300g",
       cardUnit: "/ 300g box",
       addAria: "Add ready-cut honey pineapple",
-      tag1Title: "🌿 100% fresh & clean",
+      tag1Title: "100% fresh & clean",
       tag1Sub: "Sourced fresh every morning",
       tag2Text: "Delivering now • 14 orders",
     },
     products: {
-      eyebrow: "🛒 Today's menu",
+      eyebrow: "Today's menu",
       subtitle: "Peeled and packed fresh every morning - guaranteed maximum freshness when it reaches you.",
       emptyTitle: "Menu is being updated",
       emptyDesc: "New items for this category will be added once the kitchen finalizes today's ingredients.",
@@ -218,7 +218,7 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       emptyToday: "No fruit available to build a box today - check back soon!",
     },
     how: {
-      eyebrow: "📦 Our process",
+      eyebrow: "Our process",
       titleLine1: "From the farm to you",
       titleLine2: "in 4 steps",
       subtitle: "A strict process - so every box of fruit reaches you fresh, clean, and completely safe.",
@@ -231,7 +231,7 @@ export const homeStrings: Record<Lang, HomeStrings> = {
       subtitle: "Three simple reasons - that we deliver on every single day, without exception.",
     },
     cta: {
-      heading: "Order now - get it in 30 minutes! 🚀",
+      heading: "Order now - get it in 30 minutes!",
       subtext: "Free delivery on orders from 150,000₫ · 7:00 AM - 8:00 PM",
       button: "Order now",
     },

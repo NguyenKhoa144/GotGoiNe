@@ -1,5 +1,7 @@
 "use client";
 
+import { Package } from "lucide-react";
+
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { isOptimizableImage } from "@/lib/image-url";
@@ -63,7 +65,7 @@ export function FruitBoxSection({ activeCategory, items }: FruitBoxSectionProps)
                     style={{ fontSize: `${18 + index * 8}px` }}
                     aria-hidden="true"
                   >
-                    📦
+                    <Package size={22} aria-hidden="true" />
                   </span>
                   <span className="home-fruitbox-size-name">{s.label}</span>
                   <span className="home-fruitbox-size-meta">{s.weightLabel}</span>
