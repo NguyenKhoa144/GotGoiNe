@@ -1484,3 +1484,88 @@ Chỉ đụng CSS và JSX hiển thị của hai component; không đụng schem
 - 375×812: `.home-fruitbox-items` và `.home-products-bento` đều đo được
   `165.5px 165.5px` (2 cột), `scrollWidth` không vượt `innerWidth` — trang
   không tràn ngang.
+
+## 2026-09-13 - Sửa tab Thống kê: tính lại từ sổ cái StockMovement
+
+### Cập nhật
+
+Tab Thống kê đã đứng im từ đợt tách tồn kho 21/08 và được ghi là "đừng tin số
+ở tab đó". Nguyên nhân cụ thể: `lib/stats.ts` cộng
+`DailyMenuEntry.qtyGrams`, `.soldGrams`, `.spoiledGrams` — bốn cột đã nghỉ hưu
+trong đợt đó, không còn ai ghi vào, nên **mọi con số đều bằng 0** dù tủ lạnh
+vẫn có hàng ra vào. Đã viết lại toàn bộ trên nền `StockMovement`.
+
+**`lib/stats.ts`**
+
+- `getMonthStats` đọc `prisma.stockMovement` thay cho `dailyMenuEntry` +
+  `inventoryLoss`, gom một lượt theo `kind`.
+- Kiểu `MonthStats` đổi theo đúng những gì sổ cái trả lời được:
+  - `stockedGrams` → **`importedGrams`** (tổng các dòng `IMPORT`)
+  - `spoiledGrams` → **`lostGrams`** (tổng các dòng `LOSS`)
+  - `spoilRate` → **`lossRate`** = hao / nhập
+  - `sellThrough` = bán / nhập
+  - thêm **`adjustedGrams`** — tổng `deltaGrams` của các dòng `ADJUST`, để
+    riêng vì cân chỉnh tay không phải bán cũng không phải hao.
+- `activeDays` giờ đếm số ngày có ít nhất một dòng `SALE` ("ngày có bán"),
+  trước đây đếm số ngày có thực đơn.
+- `TopProduct.spoiledGrams` → `lostGrams`.
+- `getAvailableMonths` lấy tháng từ `StockMovement` thay vì `DailyMenuEntry`.
+
+**`app/admin/stats/page.tsx`**
+
+- Ô "Tổng bày bán" → **"Đã nhập"**; "Tỷ lệ bán được" → **"Bán / nhập"**, có
+  thêm dòng phụ hiện mức cân chỉnh tay khi khác 0.
+- Tiêu đề "Bán chạy nhất" → **"Bán và hao theo loại"**: danh sách giờ gồm cả
+  loại chỉ có hao mà chưa bán, để nguyên tên cũ là nói sai.
+- Viết lại đoạn chú thích cuối trang.
+
+### Thuật ngữ
+
+- **`amountGrams` và `deltaGrams`**: `amountGrams` luôn dương, hướng cộng/trừ
+  nằm ở `kind`; `deltaGrams` là chênh lệch thực đã áp vào kho (có dấu). Nên
+  `IMPORT/SALE/LOSS` cộng bằng `amountGrams`, riêng `ADJUST` — loại duy nhất
+  được phép âm — phải cộng bằng `deltaGrams`.
+
+### Công dụng
+
+Tab Thống kê nói đúng sự thật: tháng 8/2026 nhập 6500g, hao 4000g (61.5% lượng
+nhập), chưa ghi nhận lượt bán nào; hao chia theo lý do "Thảo ăn" 3000g và "Hư
+hỏng" 1000g.
+
+### Lợi ích
+
+Mọi con số đều truy ngược được về đúng dòng sổ cái đã tạo ra nó. Không còn tỷ
+lệ nào so với "lượng bày bán" — con số vốn đếm trùng hàng tồn chuyển tiếp qua
+nhiều ngày.
+
+### Rủi ro
+
+- **`sellThrough` có thể vượt 100%** khi bán hết hàng nhập từ tháng trước. Đây
+  là con số đúng, không phải lỗi; đã ghi rõ ngay dưới bảng thay vì giấu đi hay
+  chặn ở 100%.
+- **Không đọc `InventoryLoss` nữa.** An toàn, vì `prisma/backfill-stock.mjs`
+  đã chép toàn bộ `InventoryLoss` cũ sang `StockMovement` kind `LOSS` từ
+  21/08 — cộng cả hai bảng mới là đếm trùng.
+- Danh sách tháng ngắn lại: những tháng chỉ có thực đơn mà chưa có dòng sổ cái
+  nào không còn xuất hiện. Cố ý — vào những tháng đó mọi số đều bằng 0, hiện
+  lên chỉ làm người xem tưởng tháng đó ế.
+- Con số "đã bán" đang là 0g trên dữ liệu thật. Đó là đúng: `SALE` chỉ được
+  ghi khi admin bấm "Bán tại chỗ" ở tab Tủ lạnh, mà luồng đơn hàng thì vẫn
+  đang treo chờ công thức giá cỡ hộp.
+- Bốn cột nghỉ hưu trong `DailyMenuEntry` **vẫn chưa xoá** — nhịp *contract*
+  của expand/migrate/contract còn treo. Giờ thì không còn code nào đọc chúng.
+
+### Kiểm chứng
+
+- `npm run verify` xanh, không cảnh báo.
+- `grep` toàn bộ `app/ lib/ components/`: không còn chỗ nào nhắc
+  `stockedGrams`, `spoiledGrams`, `spoilRate` hay `inventoryLoss` (ngoài
+  `prisma/backup.mjs` và `backfill-stock.mjs` — hai script một lần, cố ý giữ).
+- Xem tận mắt trên **dữ liệu production thật** (chỉ đọc, không ghi): tháng
+  8/2026 hiện 6500g nhập · 4000g hao · 61.5% · hai loại trong bảng theo loại ·
+  hai lý do hao. Tháng 9/2026 hiện đúng trạng thái rỗng.
+- Cách đăng nhập admin để xem mà không dùng mật khẩu thật của chủ shop: tạo
+  tạm `.env.development.local` (Next ưu tiên hơn `.env.local`, các biến khác
+  như `DATABASE_URL` vẫn nạp bình thường) với `ADMIN_USERNAME=devcheck` và một
+  `ADMIN_PASSWORD_HASH_B64` tự sinh bằng `bcryptjs`, rồi khởi động lại dev
+  server. **Đã xoá file này ngay sau khi kiểm chứng xong.**

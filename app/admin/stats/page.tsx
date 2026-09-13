@@ -25,7 +25,8 @@ export default async function AdminStatsPage({
 
   const maxWeek = Math.max(...stats.weeks.map((w) => w.soldGrams), 1);
   const maxProduct = Math.max(...stats.topProducts.map((p) => p.soldGrams), 1);
-  const hasData = stats.stockedGrams > 0;
+  const hasData =
+    stats.importedGrams > 0 || stats.soldGrams > 0 || stats.lostGrams > 0;
 
   const kpi = "rounded-[14px] border border-neutral-200 bg-white p-4";
   const card = "rounded-[14px] border border-neutral-200 bg-white p-5";
@@ -59,25 +60,31 @@ export default async function AdminStatsPage({
               </div>
             </div>
             <div className={kpi}>
-              <div className="text-[11px] text-neutral-500">Tổng bày bán</div>
+              <div className="text-[11px] text-neutral-500">Đã nhập</div>
               <div className="text-xl font-bold text-[#152b1a]">
-                {formatGrams(stats.stockedGrams)}
+                {formatGrams(stats.importedGrams)}
               </div>
             </div>
             <div className={kpi}>
               <div className="text-[11px] text-neutral-500">Hao hụt</div>
               <div className="text-xl font-bold text-[#152b1a]">
-                {formatGrams(stats.spoiledGrams)}
+                {formatGrams(stats.lostGrams)}
               </div>
               <div className="text-[11px] text-neutral-500">
-                {percent(stats.spoilRate)} lượng bày bán
+                {percent(stats.lossRate)} lượng nhập
               </div>
             </div>
             <div className={kpi}>
-              <div className="text-[11px] text-neutral-500">Tỷ lệ bán được</div>
+              <div className="text-[11px] text-neutral-500">Bán / nhập</div>
               <div className="text-xl font-bold text-[#152b1a]">
                 {percent(stats.sellThrough)}
               </div>
+              {stats.adjustedGrams !== 0 ? (
+                <div className="text-[11px] text-neutral-500">
+                  cân chỉnh tay {stats.adjustedGrams > 0 ? "+" : ""}
+                  {formatGrams(stats.adjustedGrams)}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -107,10 +114,10 @@ export default async function AdminStatsPage({
 
           <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
             <section className={card}>
-              <h2 className="mb-3 text-sm font-bold text-[#152b1a]">Bán chạy nhất</h2>
+              <h2 className="mb-3 text-sm font-bold text-[#152b1a]">Bán và hao theo loại</h2>
               {stats.topProducts.length === 0 ? (
                 <p className="py-4 text-center text-sm text-neutral-500">
-                  Chưa ghi nhận lượt bán nào.
+                  Chưa ghi nhận lượt bán hay hao hụt nào.
                 </p>
               ) : (
                 <div className="flex flex-col gap-2">
@@ -132,9 +139,9 @@ export default async function AdminStatsPage({
                         <div className="text-[12px] font-bold text-[#1e5c2e]">
                           {formatGrams(product.soldGrams)}
                         </div>
-                        {product.spoiledGrams > 0 ? (
+                        {product.lostGrams > 0 ? (
                           <div className="text-[10.5px] text-orange-600">
-                            hỏng {formatGrams(product.spoiledGrams)}
+                            hao {formatGrams(product.lostGrams)}
                           </div>
                         ) : null}
                       </div>
@@ -168,9 +175,9 @@ export default async function AdminStatsPage({
           </div>
 
           <p className="mt-4 text-[11px] leading-relaxed text-neutral-500">
-            Hàng còn tồn được chuyển sang ngày hôm sau, nên cùng một lượng trái cây có thể được
-            tính vào &quot;tổng bày bán&quot; của nhiều ngày. Vì vậy các tỷ lệ ở trên so với lượng
-            bày bán mỗi ngày, không phải lượng nhập mới trong tháng.
+            Mọi con số ở trên cộng từ sổ cái tủ lạnh trong tháng này. Hàng tồn từ tháng trước vẫn
+            bán được nhưng không tính vào &quot;đã nhập&quot;, nên tỷ lệ &quot;bán / nhập&quot; có
+            thể vượt 100% — đó là bán hết hàng cũ, không phải lỗi.
           </p>
         </>
       )}

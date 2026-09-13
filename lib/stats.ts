@@ -1,6 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { vnToday } from "@/lib/date-vn";
 
+/**
+ * Thống kê theo tháng, tính TỪ SỔ CÁI `StockMovement`.
+ *
+ * Trước 2026-09-13 file này cộng `DailyMenuEntry.qtyGrams/soldGrams/
+ * spoiledGrams`. Từ đợt tách tồn kho ra khỏi thực đơn (21/08) bốn cột đó đã
+ * nghỉ hưu và không còn ai ghi vào — nên mọi con số trên tab Thống kê đều
+ * bằng 0 dù quán vẫn bán bình thường. Giờ mọi con số đều lấy từ các dòng
+ * `StockMovement`, đúng nguyên tắc "sổ cái là nguồn sự thật" của dự án.
+ */
+
 export type WeekBucket = {
   label: string;
   soldGrams: number;
@@ -11,7 +21,7 @@ export type TopProduct = {
   name: string;
   emoji: string;
   soldGrams: number;
-  spoiledGrams: number;
+  lostGrams: number;
 };
 
 export type ReasonBucket = {
@@ -20,11 +30,23 @@ export type ReasonBucket = {
 };
 
 export type MonthStats = {
-  stockedGrams: number;
+  /** Tổng gram nhập vào tủ trong tháng (các dòng IMPORT). */
+  importedGrams: number;
+  /** Tổng gram bán ra trong tháng (các dòng SALE). */
   soldGrams: number;
-  spoiledGrams: number;
-  spoilRate: number | null;
+  /** Tổng gram hao hụt trong tháng (các dòng LOSS). */
+  lostGrams: number;
+  /**
+   * Tổng chênh lệch của các lần cân chỉnh tay (ADJUST), có thể âm. Tách
+   * riêng vì đây không phải bán cũng không phải hao — nhập nhằng vào hai
+   * nhóm kia là làm sai cả hai.
+   */
+  adjustedGrams: number;
+  /** Hao hụt / lượng nhập trong tháng. `null` khi tháng chưa nhập gì. */
+  lossRate: number | null;
+  /** Bán ra / lượng nhập trong tháng. `null` khi tháng chưa nhập gì. */
   sellThrough: number | null;
+  /** Số ngày khác nhau có ít nhất một lần bán. */
   activeDays: number;
   weeks: WeekBucket[];
   topProducts: TopProduct[];
@@ -50,20 +72,25 @@ export function formatMonthLabel(monthKey: string): string {
   return `Tháng ${Number(month)}/${year}`;
 }
 
-/** Các tháng đã từng có thực đơn, mới nhất trước. */
+function monthKeyOf(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/**
+ * Các tháng đã từng có biến động kho, mới nhất trước.
+ *
+ * Lấy theo `StockMovement` chứ không theo `DailyMenuEntry`: những tháng chỉ
+ * có thực đơn mà không có dòng sổ cái nào thì mọi số ở đây đều bằng 0, đưa
+ * vào danh sách chỉ làm người xem tưởng tháng đó ế.
+ */
 export async function getAvailableMonths(): Promise<string[]> {
-  const rows = await prisma.dailyMenuEntry.findMany({
+  const rows = await prisma.stockMovement.findMany({
     select: { date: true },
     orderBy: { date: "desc" },
   });
 
-  const keys = new Set<string>();
-  for (const row of rows) {
-    keys.add(
-      `${row.date.getUTCFullYear()}-${String(row.date.getUTCMonth() + 1).padStart(2, "0")}`
-    );
-  }
-  // Luôn có tháng hiện tại trong danh sách, kể cả khi chưa bán ngày nào.
+  const keys = new Set(rows.map((row) => monthKeyOf(row.date)));
+  // Luôn có tháng hiện tại trong danh sách, kể cả khi chưa phát sinh gì.
   keys.add(currentMonthKey());
 
   return [...keys].sort().reverse();
@@ -77,28 +104,18 @@ function weekIndexOf(day: number): number {
 export async function getMonthStats(monthKey: string): Promise<MonthStats> {
   const { start, end } = monthRange(monthKey);
 
-  const [entries, losses] = await Promise.all([
-    prisma.dailyMenuEntry.findMany({
-      where: { date: { gte: start, lt: end } },
-      include: { product: true },
-    }),
-    prisma.inventoryLoss.findMany({
-      where: { date: { gte: start, lt: end } },
-    }),
-  ]);
+  const movements = await prisma.stockMovement.findMany({
+    where: { date: { gte: start, lt: end } },
+    include: { product: true },
+    orderBy: { date: "asc" },
+  });
 
-  const stockedGrams = entries.reduce((sum, e) => sum + e.qtyGrams, 0);
-  const soldGrams = entries.reduce((sum, e) => sum + e.soldGrams, 0);
-  const spoiledGrams = entries.reduce((sum, e) => sum + e.spoiledGrams, 0);
+  let importedGrams = 0;
+  let soldGrams = 0;
+  let lostGrams = 0;
+  let adjustedGrams = 0;
 
-  // Lưu ý: hàng tồn được chuyển tiếp sang hôm sau nên cùng một ký trái cây có
-  // thể được đếm vào "đã nhập" của nhiều ngày. Vì vậy tỷ lệ dưới đây là so
-  // với lượng bày bán mỗi ngày, không phải lượng nhập mới trong tháng.
-  const spoilRate = stockedGrams > 0 ? spoiledGrams / stockedGrams : null;
-  const sellThrough = stockedGrams > 0 ? soldGrams / stockedGrams : null;
-
-  const activeDays = new Set(entries.map((e) => e.date.getTime())).size;
-
+  const saleDays = new Set<number>();
   const weeks: WeekBucket[] = [
     { label: "T1", soldGrams: 0 },
     { label: "T2", soldGrams: 0 },
@@ -106,42 +123,61 @@ export async function getMonthStats(monthKey: string): Promise<MonthStats> {
     { label: "T4", soldGrams: 0 },
     { label: "T5", soldGrams: 0 },
   ];
-  for (const entry of entries) {
-    weeks[weekIndexOf(entry.date.getUTCDate())].soldGrams += entry.soldGrams;
-  }
-
   const byProduct = new Map<string, TopProduct>();
-  for (const entry of entries) {
-    const current = byProduct.get(entry.productId) ?? {
-      id: entry.productId,
-      name: entry.product.name,
-      emoji: entry.product.emoji,
-      soldGrams: 0,
-      spoiledGrams: 0,
-    };
-    current.soldGrams += entry.soldGrams;
-    current.spoiledGrams += entry.spoiledGrams;
-    byProduct.set(entry.productId, current);
-  }
-  const topProducts = [...byProduct.values()]
-    .filter((p) => p.soldGrams > 0 || p.spoiledGrams > 0)
-    .sort((a, b) => b.soldGrams - a.soldGrams);
-
   const byReason = new Map<string, number>();
-  for (const loss of losses) {
-    byReason.set(loss.reason, (byReason.get(loss.reason) ?? 0) + loss.amountGrams);
+
+  for (const movement of movements) {
+    switch (movement.kind) {
+      case "IMPORT":
+        importedGrams += movement.amountGrams;
+        break;
+      case "SALE":
+        soldGrams += movement.amountGrams;
+        saleDays.add(movement.date.getTime());
+        weeks[weekIndexOf(movement.date.getUTCDate())].soldGrams += movement.amountGrams;
+        break;
+      case "LOSS":
+        lostGrams += movement.amountGrams;
+        // `reason` là bắt buộc với LOSS, nhưng dữ liệu cũ có thể thiếu.
+        byReason.set(
+          movement.reason ?? "Không ghi lý do",
+          (byReason.get(movement.reason ?? "Không ghi lý do") ?? 0) + movement.amountGrams
+        );
+        break;
+      case "ADJUST":
+        // ADJUST dùng `deltaGrams` vì đây là loại duy nhất được mang dấu âm.
+        adjustedGrams += movement.deltaGrams;
+        break;
+    }
+
+    if (movement.kind !== "SALE" && movement.kind !== "LOSS") continue;
+
+    const current = byProduct.get(movement.productId) ?? {
+      id: movement.productId,
+      name: movement.product.name,
+      emoji: movement.product.emoji,
+      soldGrams: 0,
+      lostGrams: 0,
+    };
+    if (movement.kind === "SALE") current.soldGrams += movement.amountGrams;
+    else current.lostGrams += movement.amountGrams;
+    byProduct.set(movement.productId, current);
   }
+
+  const topProducts = [...byProduct.values()].sort((a, b) => b.soldGrams - a.soldGrams);
+
   const reasons = [...byReason.entries()]
     .map(([reason, amountGrams]) => ({ reason, amountGrams }))
     .sort((a, b) => b.amountGrams - a.amountGrams);
 
   return {
-    stockedGrams,
+    importedGrams,
     soldGrams,
-    spoiledGrams,
-    spoilRate,
-    sellThrough,
-    activeDays,
+    lostGrams,
+    adjustedGrams,
+    lossRate: importedGrams > 0 ? lostGrams / importedGrams : null,
+    sellThrough: importedGrams > 0 ? soldGrams / importedGrams : null,
+    activeDays: saleDays.size,
     weeks,
     topProducts,
     reasons,
