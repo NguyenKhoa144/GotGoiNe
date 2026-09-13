@@ -6,10 +6,20 @@ import "./home.css";
 
 // Be Vietnam Pro được thiết kế riêng cho tiếng Việt: dấu thanh và dấu mũ
 // được vẽ sẵn cho từng nguyên âm, không bị chồng lên nhau như khi trình duyệt
-// tự ghép dấu bằng Arial. Chỉ nạp đúng các độ đậm mà CSS đang dùng.
+// tự ghép dấu bằng Arial.
+//
+// Mỗi độ đậm khai ở đây tốn khoảng 18KB (một file cho bộ ký tự latin, một cho
+// vietnamese) và đều được preload ở lần vào đầu. Nạp cả sáu mức là 106KB —
+// quá nhiều cho khách vào bằng 3G/4G. Giữ đúng bốn mức thật sự gánh vai trò:
+// 400 chữ thường, 700/800 chữ đậm, 900 tiêu đề lớn.
+//
+// Bỏ 500 và 600: theo quy tắc so khớp font của CSS, trình duyệt tự lấy mức
+// gần nhất đã nạp (600 -> 700, 500 -> 400). Nó CHỌN mức có sẵn chứ không tô
+// đậm giả, nên chữ không bị méo. Các chỗ dùng 600 trên trang công khai đã
+// được ghi thẳng thành 700 để khỏi phụ thuộc quy tắc đó.
 const beVietnamPro = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "700", "800", "900"],
   display: "swap",
   variable: "--font-sans-vn",
 });

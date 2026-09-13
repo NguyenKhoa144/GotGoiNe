@@ -1660,3 +1660,64 @@ nên đây không phải lỗi mới. Khi nào làm phần báo giá theo cỡ h
 - Đã gỡ món thử ngay sau đó; đếm lại `DailyMenuEntry` còn đúng 4 dòng của
   21/08 như trước khi thử.
 - Tài khoản admin tạm dùng để kiểm chứng đã xoá (`.env.development.local`).
+
+## 2026-09-13 - Cắt độ đậm font: 106KB -> 70KB
+
+### Cập nhật
+
+Rà production sau đợt thiết kế thì đo được một cái giá tự mình tạo ra: font
+Be Vietnam Pro **preload 12 file, tổng 108.792 B (~106KB)** ở lần vào đầu.
+Trước đó `body` dùng Arial nên tốn 0 KB (font có sẵn trong máy). Với khách vào
+bằng 3G/4G ở Cần Thơ thì đây không phải con số nhỏ.
+
+Đã giảm số độ đậm khai trong `app/layout.tsx` từ **sáu xuống bốn**:
+`["400", "500", "600", "700", "800", "900"]` → `["400", "700", "800", "900"]`.
+
+Bốn chỗ trong `app/home.css` dùng `font-weight: 600` (tagline logo, link
+"Menu hôm nay", nút VI|EN, chữ phụ ở banner CTA) đã ghi thẳng thành `700`.
+
+**Đính chính một nhận định sai của chính tôi.** Ở lượt trước tôi đề xuất "bỏ
+400 và 500" vì `grep` thấy mỗi mức chỉ khai tường minh 2 lần. Sai: `400` là độ
+đậm **mặc định của mọi đoạn văn**, không cần khai vẫn dùng liên tục — bỏ nó là
+hỏng toàn bộ chữ thường. Mức thật sự bỏ được là `500` và `600`.
+
+### Thuật ngữ
+
+- **Quy tắc so khớp font của CSS**: khi một độ đậm không có sẵn, trình duyệt
+  **chọn face gần nhất đã nạp** (600 → 700, 500 → 400) chứ không tô đậm giả
+  (faux bold). Nên chữ chỉ đổi một bậc, không bị méo nét.
+- **Subset**: Google Fonts cắt font theo mảng ký tự. Be Vietnam Pro sinh ba
+  bộ — `latin` (~5KB/mức), `latin-ext` (~7KB), `vietnamese` (~13KB) — nhưng
+  chỉ hai bộ khai trong `subsets` được preload, nên mỗi độ đậm tốn ~18KB.
+
+### Công dụng
+
+Trang nhẹ hơn 36KB ở lần vào đầu, phần nặng nhất (bộ ký tự tiếng Việt) giảm
+từ sáu file xuống bốn.
+
+### Lợi ích
+
+Đo được: **8 file · 71.816 B (~70KB)**, giảm **36.976 B (33%)**.
+
+### Rủi ro
+
+- `font-medium` (500) và `font-semibold` (600) của Tailwind còn dùng **35 chỗ**
+  ở khu admin, login và register, cộng 4 chỗ trong
+  `poster-generator.module.css`. Những chỗ này giờ render bằng mức gần nhất
+  (600 → 700, 500 → 400), tức đậm/nhạt hơn một bậc so với trước. Chấp nhận
+  được: đây là chữ nhãn và tiêu đề nhỏ trong khu quản trị, không phải nội dung
+  bán hàng. Không sửa 35 chỗ đó vì diff lớn mà lợi ích bằng không — quy tắc so
+  khớp của CSS đã cho kết quả đúng ý.
+- Muốn giảm thêm thì phải bỏ `800` hoặc `900`, nhưng hai mức này gánh tiêu đề
+  hero và số liệu lớn — bỏ là đổi diện mạo thật, không chỉ đổi một bậc.
+
+### Kiểm chứng
+
+- `npm run verify` xanh.
+- Dựng bản production ở máy (`next start -p 3100`) rồi đếm đúng các thẻ
+  preload trong HTML: **8 file, 71.816 B**, so với 12 file/108.792 B đo trên
+  production trước đó.
+- `[...document.fonts]` lọc theo họ Be Vietnam Pro: chỉ còn
+  `400/700/800/900` × (latin, vietnamese); `has500: false`, `has600: false`.
+- Bốn chỗ đổi sang 700 đo lại đúng `fontWeight: 700`; `body` vẫn `400`.
+- Đối chiếu ảnh chụp trang chủ và trang đăng ký trước/sau: không thấy khác.
