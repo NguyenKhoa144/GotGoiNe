@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 import { PRODUCT_CATEGORIES } from "@/data/home";
 import { vnToday } from "@/lib/date-vn";
 import { formatGrams } from "@/lib/qty";
@@ -40,6 +41,7 @@ async function resolveImage(formData: FormData): Promise<string | null | undefin
 }
 
 export async function createProduct(_prevState: string | undefined, formData: FormData) {
+  await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
   const category = String(formData.get("category") ?? "");
   const emoji = String(formData.get("emoji") ?? "").trim();
@@ -83,6 +85,7 @@ export async function createProduct(_prevState: string | undefined, formData: Fo
 }
 
 export async function updateProduct(id: string, _prevState: string | undefined, formData: FormData) {
+  await requireAdmin();
   const category = String(formData.get("category") ?? "");
   const emoji = String(formData.get("emoji") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
@@ -127,6 +130,7 @@ export async function updateProduct(id: string, _prevState: string | undefined, 
  * Trả về `null` nếu thành công, hoặc chuỗi lỗi tiếng Việt.
  */
 export async function deleteProduct(id: string): Promise<string | null> {
+  await requireAdmin();
   const movements = await prisma.stockMovement.count({ where: { productId: id } });
   if (movements > 0) {
     return "Loại này đã có lịch sử nhập/bán nên không xoá được. Hãy ẩn thay vì xoá.";
@@ -152,6 +156,7 @@ export async function deleteProduct(id: string): Promise<string | null> {
  * được tính vào tổng tủ lạnh mà không còn chỗ nào để trừ đi.
  */
 export async function archiveProduct(id: string): Promise<string | null> {
+  await requireAdmin();
   const date = vnToday();
 
   const archived = await prisma.$transaction(async (tx) => {
@@ -180,11 +185,13 @@ export async function archiveProduct(id: string): Promise<string | null> {
 }
 
 export async function unarchiveProduct(id: string) {
+  await requireAdmin();
   await prisma.product.update({ where: { id }, data: { archivedAt: null } });
   revalidateAll();
 }
 
 export async function addToTodayMenu(productId: string) {
+  await requireAdmin();
   const date = vnToday();
   // Chỉ cần biết loại này có thật hay không; định lượng và giá không còn lấy
   // từ đây nữa (tồn kho nằm ở Product.stockGrams, giá theo cỡ hộp).
@@ -214,6 +221,7 @@ export async function addToTodayMenu(productId: string) {
 }
 
 export async function removeFromTodayMenu(entryId: string) {
+  await requireAdmin();
   await prisma.dailyMenuEntry.delete({ where: { id: entryId } });
   revalidateAll();
 }
@@ -224,6 +232,7 @@ export async function removeFromTodayMenu(entryId: string) {
  * gọi, và dữ liệu cũ có sortOrder trùng nhau cũng được ghi lại cho sạch.
  */
 export async function reorderTodayMenu(orderedEntryIds: string[]) {
+  await requireAdmin();
   await prisma.$transaction(
     orderedEntryIds.map((id, index) =>
       prisma.dailyMenuEntry.update({ where: { id }, data: { sortOrder: index } })

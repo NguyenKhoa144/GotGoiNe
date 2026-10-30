@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 import { applyStockMovement } from "@/lib/stock";
 import { FRIDGE_ACTIONS, type FridgeActionId } from "./constants";
 
@@ -24,6 +25,7 @@ export async function recordFridgeChange(
   amountGrams: number,
   note?: string
 ): Promise<string | null> {
+  await requireAdmin();
   const action = FRIDGE_ACTIONS.find((a) => a.id === actionId);
   if (!action) return "Thao tác không hợp lệ.";
 
