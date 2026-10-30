@@ -72,7 +72,7 @@ lists fruit, wire it to the same source.
   in `components/home/home-content.tsx` (Client).
 - `app/admin/*` — Tổng quan · **Daily menu** (`/admin/menu`: catalogue +
   today's menu, drag & drop) · Tủ lạnh (stock in/out + ledger) · Thống kê
-  (monthly, **still reading the retired columns — its numbers are stale**) ·
+  (monthly, computed from the `StockMovement` ledger) ·
   Poster. Protected by `proxy.ts`.
 - `lib/` — `stock.ts` (the only door into inventory), `products.ts` (today's
   menu for the landing page), `upload.ts` + `compress-image.ts` +

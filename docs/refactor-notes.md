@@ -2106,3 +2106,39 @@ hơn 30 lần**. Bài học: đo tổng tải trọng trước, rồi mới ch�
 - Thứ tự tiêu đề: `H1>H2>H3>H3>H3>H2>H2>H3...` — không còn nhảy cóc.
 - Bấm Tab 5 lần tới nút "Xem menu hôm nay": `outline: 3px rgb(245,168,0)` +
   `box-shadow: rgb(30,92,46) 0 0 0 2px`, nhìn rõ trên nền xanh đậm.
+
+## 2026-10-30 - Sửa lỗi mất một lần ghi kho khi thao tác cùng lúc
+
+### Cập nhật
+
+`applyStockMovement` trước đây đọc `stockGrams` ra, tính số mới trong code,
+rồi ghi đè con số tuyệt đối. Hai máy cùng trừ 200g trên tủ 1000g sẽ cùng đọc
+1000, cùng ghi 800: sổ cái có hai dòng bán nhưng kho chỉ trừ một lần — phá
+đúng bất biến "`stockGrams` = tổng `deltaGrams`". `applyStockMovements` cũng
+kiểm tra đủ hàng bằng số đọc từ trước, nên vẫn có thể lọt tồn âm.
+
+Giờ cả hai cùng đi qua `takeFromStock`: một câu `updateMany` với
+`stockGrams: { increment: delta }` kèm điều kiện `stockGrams >= -delta`.
+Database tự cộng/trừ và tự kiểm tra trong cùng một lệnh. Hàm trừ nhiều loại
+ném `NotEnoughStock` để transaction huỷ toàn bộ đơn.
+
+Cũng sửa AGENTS.md: tab Thống kê đã đọc sổ cái từ commit `c3459d5`, ghi chú
+"numbers are stale" là cũ.
+
+### Thuật ngữ
+
+- *Race condition* (tranh chấp): hai thao tác chen nhau giữa lúc đọc và lúc
+  ghi, thao tác sau xoá mất kết quả thao tác trước.
+- *Interactive transaction*: `prisma.$transaction(async (tx) => ...)` — mọi
+  lệnh qua `tx` cùng thành công hoặc cùng huỷ; ném lỗi bên trong là huỷ hết.
+
+### Rủi ro
+
+- "Đếm lại" (ADJUST) trong `app/admin/fridge/actions.ts` vẫn tính chênh lệch
+  từ số đọc trước. Nếu đúng lúc đó có máy khác bán, kết quả lệch đúng phần
+  vừa bán. Hiếm, và sổ cái vẫn khớp kho, nên chưa sửa.
+- Chưa chạy thử trên dữ liệu: database dùng chung với trang thật.
+
+### Kiểm chứng
+
+- `npm run verify` xanh.

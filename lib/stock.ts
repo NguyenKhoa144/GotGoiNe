@@ -67,20 +67,12 @@ export async function applyStockMovement(change: StockChange): Promise<string | 
   if (!product) return "Không tìm thấy loại trái cây này.";
 
   const delta = signFor(kind, amountGrams);
-  const next = product.stockGrams + delta;
 
-  // Chặn ở đây thay vì để tồn kho âm: tồn âm là con số vô nghĩa, và một khi
-  // đã lọt vào database thì mọi thống kê phía sau đều sai theo.
-  if (next < 0) {
-    return `Tủ lạnh chỉ còn ${formatGrams(product.stockGrams)}, không thể trừ ${formatGrams(Math.abs(delta))}.`;
-  }
-
-  await prisma.$transaction([
-    prisma.product.update({
-      where: { id: productId },
-      data: { stockGrams: next },
-    }),
-    prisma.stockMovement.create({
+  // Chặn tồn kho âm: tồn âm là con số vô nghĩa, và một khi đã lọt vào
+  // database thì mọi thống kê phía sau đều sai theo.
+  const ok = await prisma.$transaction(async (tx) => {
+    if (!(await takeFromStock(tx, productId, delta))) return false;
+    await tx.stockMovement.create({
       data: {
         productId,
         date: change.date ?? vnToday(),
@@ -90,10 +82,34 @@ export async function applyStockMovement(change: StockChange): Promise<string | 
         reason: reason?.trim() || null,
         note: note?.trim() || null,
       },
-    }),
-  ]);
+    });
+    return true;
+  });
 
+  if (!ok) {
+    const fresh = await prisma.product.findUnique({ where: { id: productId } });
+    return `Tủ lạnh chỉ còn ${formatGrams(fresh?.stockGrams ?? 0)}, không thể trừ ${formatGrams(Math.abs(delta))}.`;
+  }
   return null;
+}
+
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+/**
+ * Cộng/trừ kho ngay trong database, và chỉ khi đủ hàng. Trả về `false` nếu
+ * không đủ.
+ *
+ * Không được đọc số tồn ra rồi ghi đè số mới: hai máy cùng trừ 200g trên tủ
+ * 1000g sẽ cùng đọc 1000, cùng ghi 800 — sổ cái có hai dòng bán mà kho chỉ
+ * trừ một lần. `increment` kèm điều kiện `gte` để database tự làm cả hai
+ * việc trong một câu lệnh, không ai chen vào giữa được.
+ */
+async function takeFromStock(tx: Tx, productId: string, delta: number): Promise<boolean> {
+  const updated = await tx.product.updateMany({
+    where: { id: productId, stockGrams: { gte: -delta } },
+    data: { stockGrams: { increment: delta } },
+  });
+  return updated.count === 1;
 }
 
 /**
@@ -125,24 +141,16 @@ export async function applyStockMovements(changes: StockChange[]): Promise<strin
     );
   }
 
-  for (const [productId, delta] of totalDelta) {
-    const product = byId.get(productId)!;
-    if (product.stockGrams + delta < 0) {
-      return `${product.name}: tủ lạnh chỉ còn ${formatGrams(product.stockGrams)}, không đủ để trừ ${formatGrams(Math.abs(delta))}.`;
-    }
-  }
-
   const date = vnToday();
-  await prisma.$transaction([
-    ...Array.from(totalDelta, ([productId, delta]) =>
-      prisma.product.update({
-        where: { id: productId },
-        data: { stockGrams: { increment: delta } },
-      })
-    ),
-    ...changes.map((change) =>
-      prisma.stockMovement.create({
-        data: {
+  // Loại nào thiếu thì ném lỗi để transaction huỷ hết, kể cả những loại đã
+  // trừ trước nó — đúng nguyên tắc "cả đơn hoặc không gì cả".
+  const shortId = await prisma
+    .$transaction(async (tx) => {
+      for (const [productId, delta] of totalDelta) {
+        if (!(await takeFromStock(tx, productId, delta))) throw new NotEnoughStock(productId);
+      }
+      await tx.stockMovement.createMany({
+        data: changes.map((change) => ({
           productId: change.productId,
           date: change.date ?? date,
           kind: change.kind,
@@ -150,10 +158,25 @@ export async function applyStockMovements(changes: StockChange[]): Promise<strin
           deltaGrams: signFor(change.kind, Math.trunc(change.amountGrams)),
           reason: change.reason?.trim() || null,
           note: change.note?.trim() || null,
-        },
-      })
-    ),
-  ]);
+        })),
+      });
+      return null;
+    })
+    .catch((error) => {
+      if (error instanceof NotEnoughStock) return error.productId;
+      throw error;
+    });
 
+  if (shortId) {
+    const fresh = await prisma.product.findUnique({ where: { id: shortId } });
+    const name = fresh?.name ?? byId.get(shortId)!.name;
+    return `${name}: tủ lạnh chỉ còn ${formatGrams(fresh?.stockGrams ?? 0)}, không đủ để trừ ${formatGrams(Math.abs(totalDelta.get(shortId)!))}.`;
+  }
   return null;
+}
+
+class NotEnoughStock extends Error {
+  constructor(readonly productId: string) {
+    super("Không đủ hàng trong tủ lạnh.");
+  }
 }
