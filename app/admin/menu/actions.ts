@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { PRODUCT_CATEGORIES } from "@/data/home";
 import { vnToday } from "@/lib/date-vn";
+import { formatGrams } from "@/lib/qty";
 import { uploadProductImage } from "@/lib/upload";
 
 // Mọi thay đổi thực đơn đều phải làm mới cả trang quản trị lẫn trang chủ —
@@ -46,6 +48,15 @@ export async function createProduct(_prevState: string | undefined, formData: Fo
   if (!name) return "Vui lòng nhập tên trái cây.";
   if (!(PRODUCT_CATEGORIES as readonly string[]).includes(category)) {
     return "Vui lòng chọn danh mục.";
+  }
+
+  // Tạo mới một loại trùng tên với loại đã ẩn là tách đôi lịch sử của nó:
+  // thống kê sẽ có hai dòng "Xoài cát" riêng. Bỏ ẩn loại cũ thì nối liền.
+  const archivedTwin = await prisma.product.findFirst({
+    where: { name: { equals: name, mode: "insensitive" }, archivedAt: { not: null } },
+  });
+  if (archivedTwin) {
+    return `"${archivedTwin.name}" đang nằm trong mục Đã ẩn. Bỏ ẩn loại đó để giữ liền lịch sử, thay vì tạo mới.`;
   }
 
   const image = await resolveImage(formData);
@@ -107,10 +118,69 @@ export async function updateProduct(id: string, _prevState: string | undefined, 
   revalidateAll();
 }
 
-export async function deleteProduct(id: string) {
-  // Xoá trái cây kéo theo mọi dòng thực đơn và nhật ký kho của nó
-  // (onDelete: Cascade trong schema) — cảnh báo này đã hiện ở nút xoá.
-  await prisma.product.delete({ where: { id } });
+/**
+ * Xoá hẳn — chỉ dành cho loại tạo nhầm, CHƯA có dòng sổ cái nào. Loại đã có
+ * lịch sử thì phải ẩn: xoá là kéo theo thống kê các tháng cũ tụt xuống.
+ *
+ * Database cũng tự chặn (onDelete: Restrict trên StockMovement), nên dù có
+ * ai ghi sổ chen vào giữa lúc kiểm tra và lúc xoá, lịch sử vẫn không mất.
+ * Trả về `null` nếu thành công, hoặc chuỗi lỗi tiếng Việt.
+ */
+export async function deleteProduct(id: string): Promise<string | null> {
+  const movements = await prisma.stockMovement.count({ where: { productId: id } });
+  if (movements > 0) {
+    return "Loại này đã có lịch sử nhập/bán nên không xoá được. Hãy ẩn thay vì xoá.";
+  }
+
+  try {
+    await prisma.product.delete({ where: { id } });
+  } catch (error) {
+    // P2003: vi phạm khoá nối — có dòng sổ cái vừa được ghi sau lần đếm ở trên.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return "Loại này vừa có lịch sử nhập/bán nên không xoá được. Hãy ẩn thay vì xoá.";
+    }
+    throw error;
+  }
+
+  revalidateAll();
+  return null;
+}
+
+/**
+ * Ẩn một loại: biến khỏi danh mục, thực đơn và trang chủ, nhưng sổ cái và
+ * thống kê giữ nguyên. Chỉ ẩn được khi tủ đã về 0 — nếu không, số hàng đó vẫn
+ * được tính vào tổng tủ lạnh mà không còn chỗ nào để trừ đi.
+ */
+export async function archiveProduct(id: string): Promise<string | null> {
+  const date = vnToday();
+
+  const archived = await prisma.$transaction(async (tx) => {
+    // Điều kiện `stockGrams: 0` nằm chung câu lệnh với việc ẩn: nhập hàng chen
+    // vào đúng lúc này thì việc ẩn tự thất bại, không có loại ẩn mà còn hàng.
+    const updated = await tx.product.updateMany({
+      where: { id, archivedAt: null, stockGrams: 0 },
+      data: { archivedAt: new Date() },
+    });
+    if (updated.count === 0) return false;
+
+    // Gỡ khỏi thực đơn hôm nay. Thực đơn các ngày cũ giữ nguyên làm lịch sử.
+    await tx.dailyMenuEntry.deleteMany({ where: { productId: id, date } });
+    return true;
+  });
+
+  if (!archived) {
+    const product = await prisma.product.findUnique({ where: { id } });
+    if (!product) return "Không tìm thấy loại trái cây này.";
+    if (product.archivedAt) return null;
+    return `Tủ còn ${formatGrams(product.stockGrams)} ${product.name}. Bán hết hoặc ghi hao hụt ở tab Tủ lạnh trước khi ẩn.`;
+  }
+
+  revalidateAll();
+  return null;
+}
+
+export async function unarchiveProduct(id: string) {
+  await prisma.product.update({ where: { id }, data: { archivedAt: null } });
   revalidateAll();
 }
 
@@ -120,9 +190,9 @@ export async function addToTodayMenu(productId: string) {
   // từ đây nữa (tồn kho nằm ở Product.stockGrams, giá theo cỡ hộp).
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    select: { id: true },
+    select: { archivedAt: true },
   });
-  if (!product) return;
+  if (!product || product.archivedAt) return;
 
   const last = await prisma.dailyMenuEntry.findFirst({
     where: { date },

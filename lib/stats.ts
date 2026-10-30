@@ -104,6 +104,8 @@ function weekIndexOf(day: number): number {
 export async function getMonthStats(monthKey: string): Promise<MonthStats> {
   const { start, end } = monthRange(monthKey);
 
+  // Cố ý KHÔNG lọc loại đã ẩn: ẩn là để giữ lịch sử, tháng 9 đã bán bao
+  // nhiêu xoài thì mãi là bấy nhiêu, dù giờ xoài đã hết mùa.
   const movements = await prisma.stockMovement.findMany({
     where: { date: { gte: start, lt: end } },
     include: { product: true },

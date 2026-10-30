@@ -30,6 +30,12 @@ The shop is run as a **daily menu**, not a static catalogue:
 - `DailyMenuEntry` holds **no quantities**. It only answers "is this fruit
   on display today". One row per product per day
   (`@@unique([productId, date])`); old days are kept as history.
+- **Products are archived, never deleted once they have history.**
+  `Product.archivedAt` set = hidden from catalogue, fridge, menu and the
+  landing page, but its ledger and stats stay. Archiving needs
+  `stockGrams = 0`. Hard delete is only for products with no ledger rows,
+  and the DB enforces it (`StockMovement` → `Product` is `onDelete:
+  Restrict`). Stats deliberately include archived products.
 - `InventoryLoss` is the old spoilage log, superseded by `StockMovement`
   (`kind: "LOSS"`). Nothing writes to it any more.
 

@@ -19,7 +19,9 @@ export async function getTodayMenu(): Promise<Product[]> {
   });
 
   return entries
-    .filter((entry) => entry.product.stockGrams > 0)
+    // Ẩn đã gỡ loại đó khỏi thực đơn hôm nay, nhưng vẫn lọc thêm ở đây: đây
+    // là cửa cuối trước khi tới tay khách, không trông vào nơi khác làm đúng.
+    .filter((entry) => entry.product.stockGrams > 0 && !entry.product.archivedAt)
     .map((entry) => ({
       id: entry.product.id,
       category: entry.product.category,

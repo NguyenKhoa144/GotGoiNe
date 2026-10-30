@@ -2,14 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ProductForm } from "@/components/admin/product-form";
-import { DeleteProductButton } from "@/components/admin/delete-product-button";
+import { RemoveProductButton } from "@/components/admin/remove-product-button";
 import { PRODUCT_CATEGORIES } from "@/data/home";
 import { updateProduct } from "@/app/admin/menu/actions";
 import { isBlobConfigured } from "@/lib/upload";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const product = await prisma.product.findUnique({ where: { id } });
+  const [product, movementCount] = await Promise.all([
+    prisma.product.findUnique({ where: { id } }),
+    prisma.stockMovement.count({ where: { productId: id } }),
+  ]);
   if (!product) notFound();
 
   const boundUpdate = updateProduct.bind(null, id);
@@ -21,7 +24,12 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           ← Về thực đơn
         </Link>
         <h1 className="text-lg font-bold text-[#152b1a]">Sửa sản phẩm</h1>
-        <DeleteProductButton id={product.id} name={product.name} />
+        <RemoveProductButton
+          id={product.id}
+          name={product.name}
+          hasHistory={movementCount > 0}
+          archived={Boolean(product.archivedAt)}
+        />
       </div>
 
       <ProductForm

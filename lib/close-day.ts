@@ -39,7 +39,7 @@ export async function carryForwardToToday(): Promise<CarryResult> {
 
   let carried = 0;
   for (const entry of entries) {
-    if (entry.product.stockGrams <= 0) continue;
+    if (entry.product.stockGrams <= 0 || entry.product.archivedAt) continue;
 
     const existing = await prisma.dailyMenuEntry.findUnique({
       where: { productId_date: { productId: entry.productId, date: today } },

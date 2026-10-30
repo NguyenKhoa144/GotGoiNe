@@ -2142,3 +2142,52 @@ Cũng sửa AGENTS.md: tab Thống kê đã đọc sổ cái từ commit `c3459d
 ### Kiểm chứng
 
 - `npm run verify` xanh.
+
+## 2026-10-30 - Ẩn thay cho xoá: sổ cái không bao giờ mất
+
+### Cập nhật
+
+Trước đây nút "Xoá" ở trang sửa sản phẩm xoá hẳn loại trái cây, và
+`onDelete: Cascade` kéo theo toàn bộ dòng `StockMovement` của nó — thống kê
+các tháng cũ tự tụt mà không ai biết vì sao.
+
+- **Schema** (`20261030140500_archive_product_restrict_ledger`): thêm
+  `Product.archivedAt` (rỗng = đang dùng); khoá nối `StockMovement → Product`
+  đổi sang `Restrict`, để database tự từ chối xoá loại đã có sổ cái.
+- **`archiveProduct`**: chỉ ẩn được khi tủ = 0 — điều kiện `stockGrams: 0`
+  nằm chung câu `updateMany` với việc ẩn, nên nhập hàng chen vào thì ẩn thất
+  bại. Ẩn xong gỡ khỏi thực đơn hôm nay; thực đơn ngày cũ giữ nguyên.
+- **`deleteProduct`**: chỉ xoá loại chưa có dòng sổ cái nào (tạo nhầm). Bắt
+  lỗi `P2003` phòng trường hợp có dòng sổ cái ghi chen vào giữa.
+- **`lib/stock.ts`**: `takeFromStock` thêm điều kiện `archivedAt: null` —
+  không nhập/bán được vào loại đã ẩn.
+- **`createProduct`**: tên trùng (không phân biệt hoa thường) với một loại đã
+  ẩn thì từ chối và nhắc bỏ ẩn, để thống kê không tách đôi một loại.
+- **Lọc loại đã ẩn** ở: Tổng quan (đếm), Daily menu (danh mục), Tủ lạnh
+  (danh sách), trang chủ (`lib/products.ts`), chốt ngày (`lib/close-day.ts`).
+  **Cố ý không lọc** ở Thống kê và nhật ký Tủ lạnh — đó là lịch sử.
+- **Giao diện**: `DeleteProductButton` thay bằng `RemoveProductButton`, tự
+  chọn Bỏ ẩn / Ẩn / Xoá theo trạng thái. Danh mục có thêm mục "Đã ẩn" thu gọn,
+  kèm nút Bỏ ẩn.
+
+### Thuật ngữ
+
+- *Soft delete* (xoá mềm, ở đây gọi là "ẩn"): đánh dấu một dòng là không
+  dùng nữa thay vì xoá nó khỏi database.
+- *Restrict*: luật của khoá nối — không cho xoá dòng "cha" khi còn dòng "con"
+  trỏ vào nó.
+
+### Rủi ro
+
+- Thêm một nơi mới liệt kê trái cây mà quên `archivedAt: null` thì loại đã
+  ẩn sẽ lọt ra. Đã ghi vào AGENTS.md.
+- `DailyMenuEntry` và `InventoryLoss` vẫn `Cascade`: xoá một loại chưa từng
+  có sổ cái thì thực đơn các ngày cũ của nó mất theo. Chấp nhận được vì loại
+  đó chưa từng nhập hay bán.
+
+### Kiểm chứng
+
+- Sao lưu trước khi migrate: `backups/neon-2026-10-30T14-03-36-270Z.json`
+  (4 Product · 4 DailyMenuEntry · 9 StockMovement · 1 InventoryLoss · 0 User).
+- `prisma migrate diff` giữa DB thật và schema mới ra đúng 3 câu lệnh ở trên.
+- `npm run verify` xanh.

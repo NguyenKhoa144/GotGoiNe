@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { addToTodayMenu, removeFromTodayMenu } from "@/app/admin/menu/actions";
+import { addToTodayMenu, removeFromTodayMenu, unarchiveProduct } from "@/app/admin/menu/actions";
 import { AddProductModal } from "./add-product-modal";
 import { formatGrams } from "@/lib/qty";
 
@@ -16,8 +16,12 @@ export type CatalogItem = {
   stockGrams: number;
 };
 
+export type ArchivedItem = Pick<CatalogItem, "id" | "name" | "emoji">;
+
 type CatalogPanelProps = {
   products: CatalogItem[];
+  /** Loại đã ẩn: không bày bán được nữa, nhưng bỏ ẩn là dùng lại như cũ. */
+  archived: ArchivedItem[];
   /** productId -> id dòng thực đơn hôm nay (nếu đang có trong thực đơn). */
   menuEntryByProduct: Record<string, string>;
   categories: readonly string[];
@@ -29,6 +33,7 @@ export const DRAG_TYPE = "application/x-gotgoine-product";
 
 export function CatalogPanel({
   products,
+  archived,
   menuEntryByProduct,
   categories,
   blobEnabled,
@@ -152,6 +157,31 @@ export function CatalogPanel({
           })}
         </div>
       )}
+
+      {archived.length > 0 ? (
+        <details className="mt-4 border-t border-neutral-200 pt-3">
+          <summary className="cursor-pointer text-xs font-bold text-neutral-500">
+            Đã ẩn ({archived.length} loại) — lịch sử vẫn giữ nguyên trong Thống kê
+          </summary>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {archived.map((item) => (
+              <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
+                <span className="text-neutral-500">
+                  {item.emoji} {item.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => startTransition(() => unarchiveProduct(item.id))}
+                  disabled={pending}
+                  className="rounded-lg border border-neutral-300 px-2.5 py-1 text-xs font-semibold text-[#1e5c2e] hover:border-[#1e5c2e] disabled:opacity-60"
+                >
+                  Bỏ ẩn
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
 
       {showModal ? (
         <AddProductModal

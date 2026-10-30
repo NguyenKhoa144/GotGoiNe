@@ -16,7 +16,12 @@ export default async function AdminFridgePage() {
   const weekAgo = addDays(today, -6);
 
   const [products, todayEntries, movements] = await Promise.all([
-    prisma.product.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
+    // Loại đã ẩn luôn có tủ = 0 và không nhập/bán được nữa, nên không cần
+    // dòng ở đây. Nhật ký bên dưới thì vẫn hiện cả loại đã ẩn — đó là lịch sử.
+    prisma.product.findMany({
+      where: { archivedAt: null },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    }),
     prisma.dailyMenuEntry.findMany({ where: { date: today }, select: { productId: true } }),
     prisma.stockMovement.findMany({
       where: { date: { gte: weekAgo } },

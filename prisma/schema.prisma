@@ -40,6 +40,10 @@ model Product {
   // ngày như DailyMenuEntry.qtyGrams trước đây. Mọi thay đổi phải đi kèm một
   // dòng StockMovement giải thích vì sao, không bao giờ sửa trần.
   stockGrams  Int      @default(0)
+  // Ngày admin ẩn loại này (hết mùa, ngừng bán). `null` = đang dùng. Ẩn thay
+  // cho xoá để sổ cái và thống kê các tháng cũ không bao giờ tự đổi. Chỉ ẩn
+  // được khi tủ đã về 0 — xem archiveProduct trong app/admin/menu/actions.ts.
+  archivedAt  DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -84,7 +88,10 @@ model InventoryLoss {
 model StockMovement {
   id          String   @id @default(cuid())
   productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // Restrict: database tự từ chối xoá một loại đã có sổ cái. Trước đây là
+  // Cascade — xoá một loại là xoá luôn lịch sử của nó, thống kê tháng cũ tự
+  // tụt mà không ai biết vì sao.
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
   // Ngày áp dụng theo lịch Việt Nam (00:00 UTC của ngày đó), để gom nhóm
   // thống kê theo ngày mà không lệch múi giờ.
   date        DateTime @db.Date

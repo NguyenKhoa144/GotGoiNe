@@ -65,6 +65,7 @@ export async function applyStockMovement(change: StockChange): Promise<string | 
 
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) return "Không tìm thấy loại trái cây này.";
+  if (product.archivedAt) return ARCHIVED_ERROR(product.name);
 
   const delta = signFor(kind, amountGrams);
 
@@ -88,6 +89,7 @@ export async function applyStockMovement(change: StockChange): Promise<string | 
 
   if (!ok) {
     const fresh = await prisma.product.findUnique({ where: { id: productId } });
+    if (fresh?.archivedAt) return ARCHIVED_ERROR(fresh.name);
     return `Tủ lạnh chỉ còn ${formatGrams(fresh?.stockGrams ?? 0)}, không thể trừ ${formatGrams(Math.abs(delta))}.`;
   }
   return null;
@@ -95,9 +97,11 @@ export async function applyStockMovement(change: StockChange): Promise<string | 
 
 type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
+const ARCHIVED_ERROR = (name: string) => `${name} đang ẩn. Bỏ ẩn ở tab Daily menu trước khi nhập/bán.`;
+
 /**
- * Cộng/trừ kho ngay trong database, và chỉ khi đủ hàng. Trả về `false` nếu
- * không đủ.
+ * Cộng/trừ kho ngay trong database, và chỉ khi đủ hàng và loại đó chưa bị
+ * ẩn. Trả về `false` nếu không được.
  *
  * Không được đọc số tồn ra rồi ghi đè số mới: hai máy cùng trừ 200g trên tủ
  * 1000g sẽ cùng đọc 1000, cùng ghi 800 — sổ cái có hai dòng bán mà kho chỉ
@@ -106,7 +110,9 @@ type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
  */
 async function takeFromStock(tx: Tx, productId: string, delta: number): Promise<boolean> {
   const updated = await tx.product.updateMany({
-    where: { id: productId, stockGrams: { gte: -delta } },
+    // `archivedAt: null` nằm chung câu lệnh: ẩn và nhập hàng chen nhau thì
+    // một trong hai phải thua, không thể có loại đã ẩn mà tủ lại còn hàng.
+    where: { id: productId, archivedAt: null, stockGrams: { gte: -delta } },
     data: { stockGrams: { increment: delta } },
   });
   return updated.count === 1;
@@ -170,6 +176,7 @@ export async function applyStockMovements(changes: StockChange[]): Promise<strin
   if (shortId) {
     const fresh = await prisma.product.findUnique({ where: { id: shortId } });
     const name = fresh?.name ?? byId.get(shortId)!.name;
+    if (fresh?.archivedAt) return ARCHIVED_ERROR(name);
     return `${name}: tủ lạnh chỉ còn ${formatGrams(fresh?.stockGrams ?? 0)}, không đủ để trừ ${formatGrams(Math.abs(totalDelta.get(shortId)!))}.`;
   }
   return null;

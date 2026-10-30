@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminMenuPage() {
   const date = vnToday();
 
-  const [products, entries, carriedFromYesterday] = await Promise.all([
+  const [allProducts, entries, carriedFromYesterday] = await Promise.all([
     prisma.product.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
     prisma.dailyMenuEntry.findMany({
       where: { date },
@@ -20,6 +20,11 @@ export default async function AdminMenuPage() {
     }),
     wasCarriedFromYesterday(),
   ]);
+
+  const products = allProducts.filter((p) => !p.archivedAt);
+  const archived = allProducts
+    .filter((p) => p.archivedAt)
+    .map((p) => ({ id: p.id, name: p.name, emoji: p.emoji }));
 
   const menuEntryByProduct: Record<string, string> = {};
   for (const entry of entries) {
@@ -56,6 +61,7 @@ export default async function AdminMenuPage() {
             imageUrl: p.imageUrl,
             stockGrams: p.stockGrams,
           }))}
+          archived={archived}
           menuEntryByProduct={menuEntryByProduct}
           categories={PRODUCT_CATEGORIES}
           blobEnabled={isBlobConfigured()}

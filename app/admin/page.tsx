@@ -9,7 +9,7 @@ export default async function AdminHomePage() {
   const today = vnToday();
 
   const [totalProducts, entries, movesToday, stock] = await Promise.all([
-    prisma.product.count(),
+    prisma.product.count({ where: { archivedAt: null } }),
     prisma.dailyMenuEntry.findMany({ where: { date: today }, include: { product: true } }),
     prisma.stockMovement.findMany({ where: { date: today } }),
     prisma.product.aggregate({ _sum: { stockGrams: true } }),
