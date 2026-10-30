@@ -36,6 +36,16 @@ The shop is run as a **daily menu**, not a static catalogue:
   `stockGrams = 0`. Hard delete is only for products with no ledger rows,
   and the DB enforces it (`StockMovement` → `Product` is `onDelete:
   Restrict`). Stats deliberately include archived products.
+- **Orders deduct stock at the moment the customer orders** (owner's choice,
+  "phương án A"). `placeOrder` in `lib/orders.ts` creates the `Order` and
+  the `SALE` movements in ONE transaction; the conditional stock update makes
+  the database queue simultaneous orders, so two customers can never both get
+  the last portion — the later one is rejected and told which fruit is short
+  and how much is left. Grams per fruit are split server-side from the box
+  size (`splitGrams`), never trusted from the browser. Cancelling writes
+  `RETURN` movements (stats subtract them from "sold"); nothing is deleted.
+  A product with open orders cannot be archived. Prices are still quoted by
+  the shop on the phone — orders carry no price.
 - `InventoryLoss` is the old spoilage log, superseded by `StockMovement`
   (`kind: "LOSS"`). Nothing writes to it any more.
 
@@ -65,6 +75,10 @@ lists fruit, wire it to the same source.
 - **Every "today" goes through `lib/date-vn.ts`.** The server runs UTC, the
   shop runs UTC+7 — a bare `new Date()` silently shifts the menu by a day
   from 17:00 Vietnam time onward.
+- **Every admin server action starts with `await requireAdmin()`**
+  (`lib/require-admin.ts`). `proxy.ts` only guards page URLs; a server
+  action is its own POST endpoint. The one public action is
+  `app/order-actions.ts`, which validates everything itself.
 - **Pages reading live data need `export const dynamic = "force-dynamic"`,**
   otherwise Next prerenders them and admin edits never reach the live site.
 - Category strings are the join key between admin and the landing page's
@@ -76,11 +90,13 @@ lists fruit, wire it to the same source.
 
 - `app/page.tsx` — Server Component, loads today's menu; interactivity lives
   in `components/home/home-content.tsx` (Client).
-- `app/admin/*` — Tổng quan · **Daily menu** (`/admin/menu`: catalogue +
+- `app/admin/*` — Tổng quan · **Đơn hàng** (`/admin/orders`, auto-refreshes
+  every 15s) · **Daily menu** (`/admin/menu`: catalogue +
   today's menu, drag & drop) · Tủ lạnh (stock in/out + ledger) · Thống kê
   (monthly, computed from the `StockMovement` ledger) ·
   Poster. Protected by `proxy.ts`.
-- `lib/` — `stock.ts` (the only door into inventory), `products.ts` (today's
+- `lib/` — `orders.ts` + `order-rules.ts` (ordering; rules are pure and shared
+  with the browser), `stock.ts` (the only door into inventory), `products.ts` (today's
   menu for the landing page), `upload.ts` + `compress-image.ts` +
   `image-url.ts` (fruit photos), `close-day.ts`, `date-vn.ts`, `stats.ts`,
   `qty.ts`, `money.ts`, `prisma.ts`.

@@ -1214,6 +1214,194 @@ button.home-nav-search-btn:hover {
   margin: 0;
 }
 
+/* Đặt hộp: danh sách đã chọn, form, báo hết hàng, xác nhận đơn. */
+.home-order-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home-fruitbox-cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.home-order-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home-order-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.home-order-line-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.home-order-line-grams {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.home-order-line.home-is-gone .home-order-line-name {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.home-order-line-problem {
+  font-size: 12px;
+  font-weight: 700;
+  color: #b3261e;
+}
+
+.home-order-link {
+  border: none;
+  background: none;
+  padding: 10px 4px;
+  margin: -10px -4px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green-dark);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.home-order-alert {
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  background: #fdecea;
+  border: 1px solid rgba(179, 38, 30, 0.25);
+  animation: fade-in-up 220ms ease;
+}
+
+.home-order-alert strong {
+  display: block;
+  font-size: 13px;
+  color: #8c1d18;
+  margin-bottom: 4px;
+}
+
+.home-order-alert p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8c1d18;
+}
+
+.home-order-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.home-order-chip {
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-muted);
+  color: var(--green-dark);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.home-order-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home-order-form label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.home-order-form input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  /* 16px: nhỏ hơn thì Safari trên iPhone tự phóng to trang khi chạm vào ô. */
+  font: inherit;
+  font-size: 16px;
+}
+
+.home-order-form input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.home-order-error {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b3261e;
+}
+
+.home-order-fineprint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.home-order-done {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  animation: fade-in-up 220ms ease;
+}
+
+.home-order-done-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--green-dark);
+  color: #fff;
+  font-weight: 800;
+  font-size: 20px;
+}
+
+.home-order-done strong {
+  font-size: 18px;
+  color: var(--green-dark);
+}
+
+.home-order-done p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
 .home-how-section {
   padding: 88px 0 0;
 }

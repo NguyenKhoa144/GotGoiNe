@@ -32,7 +32,7 @@ export type ReasonBucket = {
 export type MonthStats = {
   /** Tổng gram nhập vào tủ trong tháng (các dòng IMPORT). */
   importedGrams: number;
-  /** Tổng gram bán ra trong tháng (các dòng SALE). */
+  /** Tổng gram bán ra trong tháng: các dòng SALE trừ đi các dòng RETURN (huỷ đơn). */
   soldGrams: number;
   /** Tổng gram hao hụt trong tháng (các dòng LOSS). */
   lostGrams: number;
@@ -150,9 +150,15 @@ export async function getMonthStats(monthKey: string): Promise<MonthStats> {
         // ADJUST dùng `deltaGrams` vì đây là loại duy nhất được mang dấu âm.
         adjustedGrams += movement.deltaGrams;
         break;
+      case "RETURN":
+        // Huỷ đơn: hàng quay về tủ, nên không còn tính là đã bán. Trừ vào
+        // đúng tuần và đúng ngày của dòng hoàn, không sửa dòng SALE cũ.
+        soldGrams -= movement.amountGrams;
+        weeks[weekIndexOf(movement.date.getUTCDate())].soldGrams -= movement.amountGrams;
+        break;
     }
 
-    if (movement.kind !== "SALE" && movement.kind !== "LOSS") continue;
+    if (movement.kind !== "SALE" && movement.kind !== "LOSS" && movement.kind !== "RETURN") continue;
 
     const current = byProduct.get(movement.productId) ?? {
       id: movement.productId,
@@ -162,6 +168,7 @@ export async function getMonthStats(monthKey: string): Promise<MonthStats> {
       lostGrams: 0,
     };
     if (movement.kind === "SALE") current.soldGrams += movement.amountGrams;
+    else if (movement.kind === "RETURN") current.soldGrams -= movement.amountGrams;
     else current.lostGrams += movement.amountGrams;
     byProduct.set(movement.productId, current);
   }

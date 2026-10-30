@@ -8,11 +8,12 @@ export const dynamic = "force-dynamic";
 export default async function AdminHomePage() {
   const today = vnToday();
 
-  const [totalProducts, entries, movesToday, stock] = await Promise.all([
+  const [totalProducts, entries, movesToday, stock, pendingOrders] = await Promise.all([
     prisma.product.count({ where: { archivedAt: null } }),
     prisma.dailyMenuEntry.findMany({ where: { date: today }, include: { product: true } }),
     prisma.stockMovement.findMany({ where: { date: today } }),
     prisma.product.aggregate({ _sum: { stockGrams: true } }),
+    prisma.order.count({ where: { status: "PENDING" } }),
   ]);
 
   // Khách chỉ thấy loại vừa nằm trong thực đơn hôm nay, vừa còn hàng trong tủ.
@@ -22,7 +23,8 @@ export default async function AdminHomePage() {
   // Mọi định lượng đều là gram nên cộng gộp được trực tiếp.
   const sumKind = (kind: string) =>
     movesToday.filter((m) => m.kind === kind).reduce((total, m) => total + m.amountGrams, 0);
-  const soldToday = sumKind("SALE");
+  // Đơn huỷ hoàn hàng về tủ (RETURN) thì không còn tính là đã bán.
+  const soldToday = sumKind("SALE") - sumKind("RETURN");
   const lostToday = sumKind("LOSS");
   const totalStock = stock._sum.stockGrams ?? 0;
 
@@ -58,6 +60,17 @@ export default async function AdminHomePage() {
       </div>
 
       <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
+        <Link
+          href="/admin/orders"
+          className={pendingOrders > 0 ? `${card} border-[#f5a800] bg-[#fff8e1]` : card}
+        >
+          <div className="mb-1 text-2xl">🧾</div>
+          <div className="text-sm font-bold text-[#152b1a]">Đơn hàng</div>
+          <div className="text-xs text-neutral-500">
+            {pendingOrders > 0 ? `${pendingOrders} đơn đang chờ gọi xác nhận` : "Chưa có đơn nào đang chờ"}
+          </div>
+        </Link>
+
         <Link href="/admin/menu" className={card}>
           <div className="mb-1 text-2xl">🍎</div>
           <div className="text-sm font-bold text-[#152b1a]">Daily menu</div>

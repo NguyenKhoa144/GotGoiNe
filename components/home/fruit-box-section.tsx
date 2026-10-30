@@ -8,6 +8,7 @@ import { isOptimizableImage } from "@/lib/image-url";
 import { useLanguage } from "@/lib/language-context";
 import { homeStrings } from "@/lib/i18n/home-strings";
 import { getFruitBoxContent, type FruitBoxItem } from "@/data/fruit-box";
+import { BoxOrderPanel, type SelectedFruit } from "./box-order-panel";
 
 type FruitBoxSectionProps = {
   activeCategory: string;
@@ -23,8 +24,11 @@ export function FruitBoxSection({ activeCategory, items, isSearching }: FruitBox
   const content = getFruitBoxContent(lang);
 
   const [sizeId, setSizeId] = useState(content.sizes[0].id);
-  const [qty, setQty] = useState<Record<string, number>>({});
+  // Lưu kèm thông tin trái lúc khách chọn: loại nào vừa biến khỏi thực đơn
+  // (hết hàng) thì khung tóm tắt vẫn gọi đúng tên để báo "vừa hết".
+  const [picks, setPicks] = useState<Record<string, { item: FruitBoxItem; parts: number }>>({});
   const [showToast, setShowToast] = useState(false);
+  const size = content.sizes.find((s) => s.id === sizeId) ?? content.sizes[0];
 
   useEffect(() => {
     if (!showToast) return;
@@ -32,16 +36,27 @@ export function FruitBoxSection({ activeCategory, items, isSearching }: FruitBox
     return () => clearTimeout(timer);
   }, [showToast]);
 
-  const selectedTypes = Object.values(qty).filter((n) => n > 0).length;
+  const selectedTypes = Object.keys(picks).length;
 
-  const changeQty = (itemId: string, delta: number) => {
-    setQty((prev) => {
-      const current = prev[itemId] ?? 0;
-      const next = current + delta;
+  const changeQty = (item: FruitBoxItem, delta: number) => {
+    setPicks((prev) => {
+      const next = (prev[item.id]?.parts ?? 0) + delta;
       if (next < 0) return prev;
-      return { ...prev, [itemId]: next };
+      const copy = { ...prev };
+      if (next === 0) delete copy[item.id];
+      else copy[item.id] = { item, parts: next };
+      return copy;
     });
   };
+
+  const presentIds = new Set(items.map((item) => item.id));
+  const selected: SelectedFruit[] = Object.values(picks).map(({ item, parts }) => ({
+    id: item.id,
+    name: item.name,
+    emoji: item.emoji,
+    parts,
+    present: presentIds.has(item.id),
+  }));
 
   return (
     <section className="home-fruitbox-section" id="menu">
@@ -82,7 +97,7 @@ export function FruitBoxSection({ activeCategory, items, isSearching }: FruitBox
 
             <div className="home-fruitbox-items">
               {items.map((item, index) => {
-                const current = qty[item.id] ?? 0;
+                const current = picks[item.id]?.parts ?? 0;
                 return (
                   <div
                     className={`home-fruitbox-item${current > 0 ? " home-is-selected" : ""}${
@@ -120,7 +135,7 @@ export function FruitBoxSection({ activeCategory, items, isSearching }: FruitBox
                       <button
                         type="button"
                         className="home-fruitbox-step"
-                        onClick={() => changeQty(item.id, -1)}
+                        onClick={() => changeQty(item, -1)}
                         disabled={current === 0}
                         aria-label={`${t.decreaseAriaPrefix}${item.name}`}
                       >
@@ -130,7 +145,7 @@ export function FruitBoxSection({ activeCategory, items, isSearching }: FruitBox
                       <button
                         type="button"
                         className="home-fruitbox-step"
-                        onClick={() => changeQty(item.id, 1)}
+                        onClick={() => changeQty(item, 1)}
                         aria-label={`${t.increaseAriaPrefix}${item.name}`}
                       >
                         ＋
@@ -144,29 +159,53 @@ export function FruitBoxSection({ activeCategory, items, isSearching }: FruitBox
           </div>
 
           <div className="home-fruitbox-summary">
-            <div className="home-fruitbox-stats">
-              <div className="home-fruitbox-stat home-fruitbox-stat-solo">
-                <span className="home-fruitbox-stat-label">{t.selectedTypesLabel}</span>
-                <span className="home-fruitbox-stat-value">
-                  {selectedTypes} {t.selectedTypesUnit}
-                </span>
-              </div>
-            </div>
+            {lang === "vi" ? (
+              <BoxOrderPanel
+                size={size}
+                selected={selected}
+                available={items}
+                onRemove={(id) =>
+                  setPicks((prev) => {
+                    const copy = { ...prev };
+                    delete copy[id];
+                    return copy;
+                  })
+                }
+                onAdd={(id) => {
+                  const item = items.find((candidate) => candidate.id === id);
+                  if (item) changeQty(item, 1);
+                }}
+                onReset={() => setPicks({})}
+              />
+            ) : (
+              // Bản tiếng Anh dùng danh sách tĩnh, không nối với tủ lạnh, nên
+              // chưa đặt được — giữ thông báo "sắp ra mắt" như trước.
+              <>
+                <div className="home-fruitbox-stats">
+                  <div className="home-fruitbox-stat home-fruitbox-stat-solo">
+                    <span className="home-fruitbox-stat-label">{t.selectedTypesLabel}</span>
+                    <span className="home-fruitbox-stat-value">
+                      {selectedTypes} {t.selectedTypesUnit}
+                    </span>
+                  </div>
+                </div>
 
-            <button
-              type="button"
-              className="home-fruitbox-cta"
-              onClick={() => setShowToast(true)}
-            >
-              {t.ctaButton}
-            </button>
+                <button
+                  type="button"
+                  className="home-fruitbox-cta"
+                  onClick={() => setShowToast(true)}
+                >
+                  {t.ctaButton}
+                </button>
 
-            {showToast ? (
-              <div className="home-fruitbox-toast" role="status">
-                <strong>{t.comingSoonTitle}</strong>
-                <p>{t.comingSoonDesc}</p>
-              </div>
-            ) : null}
+                {showToast ? (
+                  <div className="home-fruitbox-toast" role="status">
+                    <strong>{t.comingSoonTitle}</strong>
+                    <p>{t.comingSoonDesc}</p>
+                  </div>
+                ) : null}
+              </>
+            )}
           </div>
         </div>
       </div>

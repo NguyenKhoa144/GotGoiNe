@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { PRODUCT_CATEGORIES } from "@/data/home";
 import { vnToday } from "@/lib/date-vn";
 import { formatGrams } from "@/lib/qty";
+import { OPEN_ORDER_STATUSES } from "@/lib/order-rules";
 import { uploadProductImage } from "@/lib/upload";
 
 // Mọi thay đổi thực đơn đều phải làm mới cả trang quản trị lẫn trang chủ —
@@ -162,8 +163,15 @@ export async function archiveProduct(id: string): Promise<string | null> {
   const archived = await prisma.$transaction(async (tx) => {
     // Điều kiện `stockGrams: 0` nằm chung câu lệnh với việc ẩn: nhập hàng chen
     // vào đúng lúc này thì việc ẩn tự thất bại, không có loại ẩn mà còn hàng.
+    // Cũng không ẩn loại còn nằm trong đơn chưa giao: huỷ đơn đó sẽ phải
+    // hoàn hàng về tủ, mà loại đã ẩn thì không nhận hàng được nữa.
     const updated = await tx.product.updateMany({
-      where: { id, archivedAt: null, stockGrams: 0 },
+      where: {
+        id,
+        archivedAt: null,
+        stockGrams: 0,
+        orderItems: { none: { order: { status: { in: OPEN_ORDER_STATUSES } } } },
+      },
       data: { archivedAt: new Date() },
     });
     if (updated.count === 0) return false;
@@ -177,6 +185,9 @@ export async function archiveProduct(id: string): Promise<string | null> {
     const product = await prisma.product.findUnique({ where: { id } });
     if (!product) return "Không tìm thấy loại trái cây này.";
     if (product.archivedAt) return null;
+    if (product.stockGrams === 0) {
+      return `${product.name} còn nằm trong đơn chưa giao. Giao xong hoặc huỷ đơn đó ở tab Đơn hàng trước khi ẩn.`;
+    }
     return `Tủ còn ${formatGrams(product.stockGrams)} ${product.name}. Bán hết hoặc ghi hao hụt ở tab Tủ lạnh trước khi ẩn.`;
   }
 

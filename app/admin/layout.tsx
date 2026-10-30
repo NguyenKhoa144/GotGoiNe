@@ -4,13 +4,19 @@ import { signOut } from "@/auth";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="animate-[fade-in-up_0.5s_ease-out]">
-      <div className="flex items-center justify-between bg-[#d4e8c2] px-4 py-3">
-        <nav className="flex gap-2">
+      <div className="flex items-center justify-between gap-2 bg-[#d4e8c2] px-4 py-3">
+        <nav className="flex flex-wrap gap-2">
           <Link
             href="/admin"
             className="rounded-lg px-3 py-1.5 text-sm font-bold text-[#1E5C2D] hover:bg-[#EAF0E3]"
           >
             Tổng quan
+          </Link>
+          <Link
+            href="/admin/orders"
+            className="rounded-lg px-3 py-1.5 text-sm font-bold text-[#1E5C2D] hover:bg-[#EAF0E3]"
+          >
+            Đơn hàng
           </Link>
           <Link
             href="/admin/menu"

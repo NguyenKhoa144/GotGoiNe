@@ -3,10 +3,13 @@ import type { Lang } from "@/lib/language-context";
 export type FruitBoxSize = {
   id: string;
   label: string;
-  // Trọng lượng thực tế của hộp, chỉ để hiển thị cho khách biết — không
-  // dùng để giới hạn số loại/số lượng trái được chọn. Phần chia theo từng
-  // loại trái và giá bán do admin xử lý sau khi lên đơn.
   weightLabel: string;
+  /**
+   * Trọng lượng hộp tính bằng gram. Máy chủ dùng con số này để chia gram cho
+   * từng loại trái khi khách đặt — không bao giờ tin số gram trình duyệt gửi.
+   * Giá bán vẫn do quán báo khi gọi xác nhận đơn.
+   */
+  grams: number;
 };
 
 export type FruitBoxItem = {
@@ -27,9 +30,9 @@ type FruitBoxContent = {
 const fruitBoxContent: Record<Lang, FruitBoxContent> = {
   vi: {
     sizes: [
-      { id: "small", label: "Hộp nhỏ", weightLabel: "500g" },
-      { id: "medium", label: "Hộp vừa", weightLabel: "700g" },
-      { id: "large", label: "Hộp lớn", weightLabel: "1000g" },
+      { id: "small", label: "Hộp nhỏ", weightLabel: "500g", grams: 500 },
+      { id: "medium", label: "Hộp vừa", weightLabel: "700g", grams: 700 },
+      { id: "large", label: "Hộp lớn", weightLabel: "1000g", grams: 1000 },
     ],
     items: [
       { id: "xoai", emoji: "🥭", color: "#ffd98a", name: "Xoài" },
@@ -44,9 +47,9 @@ const fruitBoxContent: Record<Lang, FruitBoxContent> = {
   },
   en: {
     sizes: [
-      { id: "small", label: "Small box", weightLabel: "500g" },
-      { id: "medium", label: "Medium box", weightLabel: "700g" },
-      { id: "large", label: "Large box", weightLabel: "1000g" },
+      { id: "small", label: "Small box", weightLabel: "500g", grams: 500 },
+      { id: "medium", label: "Medium box", weightLabel: "700g", grams: 700 },
+      { id: "large", label: "Large box", weightLabel: "1000g", grams: 1000 },
     ],
     items: [
       { id: "xoai", emoji: "🥭", color: "#ffd98a", name: "Mango" },
@@ -63,6 +66,11 @@ const fruitBoxContent: Record<Lang, FruitBoxContent> = {
 
 export function getFruitBoxContent(lang: Lang): FruitBoxContent {
   return fruitBoxContent[lang];
+}
+
+/** Cỡ hộp theo id, dùng phía máy chủ khi nhận đơn. `undefined` nếu id lạ. */
+export function findBoxSize(sizeId: string): FruitBoxSize | undefined {
+  return fruitBoxContent.vi.sizes.find((size) => size.id === sizeId);
 }
 
 // Màu nền khung ảnh, chọn theo id sản phẩm để một loại trái luôn giữ đúng một

@@ -2191,3 +2191,81 @@ các tháng cũ tự tụt mà không ai biết vì sao.
   (4 Product · 4 DailyMenuEntry · 9 StockMovement · 1 InventoryLoss · 0 User).
 - `prisma migrate diff` giữa DB thật và schema mới ra đúng 3 câu lệnh ở trên.
 - `npm run verify` xanh.
+
+## 2026-10-30 - Đặt hộp qua web (phương án A) và vá quyền cho server action
+
+### Cập nhật
+
+**Đặt hàng — trừ kho ngay lúc đặt.** Khách ghép hộp ở trang chủ (bản tiếng
+Việt), điền tên, SĐT, địa chỉ rồi đặt. `placeOrder` (`lib/orders.ts`) tạo
+`Order` + `OrderItem` và các dòng `SALE` (kèm `orderId`) trong **một**
+transaction, qua `applyStockMovementsInTx` — lõi mới tách từ
+`applyStockMovements`, vẫn là cửa duy nhất vào kho.
+
+- *Ai được khi tranh phần cuối:* đơn nào tới database trước. Câu trừ kho có
+  điều kiện "còn đủ", database bắt đơn sau chờ rồi kiểm lại -> từ chối.
+  Bằng chứng: dòng SALE ghi "Đơn GG-XXXX" và giờ tới mili giây.
+- *Người không được thấy gì:* máy chủ trả về đúng loại thiếu và số gram còn
+  thật (`describeShortages` đọc lại tủ sau khi bị từ chối). Giao diện giữ
+  nguyên hộp và thông tin đã điền, gạch loại "Vừa hết" / "Chỉ còn Xg", gợi
+  ý loại thay thế còn hàng, chặn nút đặt tới khi khách xử lý xong.
+- *Không bán lố, không đơn nửa vời:* thiếu một loại thì cả đơn huỷ.
+- *Không kẹt nhau (deadlock):* khoá các loại theo thứ tự id cố định.
+- *Không tạo đơn trùng:* `idempotencyKey` duy nhất do trình duyệt sinh cho
+  mỗi nội dung đơn; gửi lại thì trả đúng đơn cũ.
+- *Gram:* `splitGrams` chia trọng lượng hộp theo số phần, phần lẻ cho loại dư
+  nhiều nhất — tổng luôn đúng bằng hộp. Cỡ hộp thêm `grams` trong
+  `data/fruit-box.ts`; máy chủ không tin số gram từ trình duyệt.
+- *Chống giữ hàng ảo:* tối đa 3 đơn chờ xác nhận cho một SĐT.
+- *Lớp "đỡ thất vọng":* khi khách đang ghép dở, trang hỏi lại thực đơn mỗi
+  15 giây và khi quay lại tab (`router.refresh()`).
+- Bản tiếng Anh vẫn chưa đặt được (dữ liệu tĩnh `EN_PRODUCTS`), có câu
+  hướng dẫn chuyển sang VI.
+
+**Admin.** Tab "Đơn hàng": Chờ xác nhận -> Đã xác nhận -> Đã giao, hoặc Huỷ &
+hoàn kho. Đổi trạng thái/huỷ đều có điều kiện trong cùng câu lệnh, nên hai
+máy cùng bấm cũng chỉ một lần có tác dụng. Huỷ ghi dòng `RETURN` (kind mới):
+Thống kê, Tổng quan trừ RETURN khỏi "đã bán". Tổng quan có thẻ số đơn chờ.
+`archiveProduct` không cho ẩn loại còn trong đơn chưa giao.
+
+**Bảo mật.** Tài liệu Next đi kèm (`data-security.md`) nói rõ server action
+là một endpoint POST riêng, kiểm tra ở trang/`proxy.ts` không bảo vệ nó.
+Thêm `requireAdmin()` vào đầu cả 9 action admin cũ và 2 action đơn hàng.
+
+**Schema** (`20261030150000_add_orders`, chỉ thêm): bảng `Order`,
+`OrderItem`, cột `StockMovement.orderId` (Restrict).
+
+### Thuật ngữ
+
+- *Idempotency* (tính "gửi lại không sao"): cùng một yêu cầu gửi nhiều lần
+  cho ra đúng một kết quả.
+- *Deadlock*: hai giao dịch mỗi bên giữ một khoá và chờ khoá của bên kia.
+
+### Rủi ro / chưa làm
+
+- Chưa có thông báo đẩy cho chủ quán khi có đơn mới — phải mở tab Đơn hàng
+  (tự làm mới 15 giây) hoặc nhìn thẻ ở Tổng quan.
+- Không giới hạn giờ đặt; đơn ngoài 7:00–20:00 vẫn vào, quán xử lý sáng hôm sau.
+- Chặn spam mới ở mức 3 đơn chờ/SĐT; chưa có giới hạn theo IP hay captcha.
+- Thử giả mạo gọi action không đăng nhập: Next 16 tự chặn trước (action chỉ
+  đăng ký cho trang admin), nên chưa chạm tới `requireAdmin` — lớp đó là
+  phòng thủ thứ hai.
+
+### Kiểm chứng
+
+Trên Postgres tạm ở máy (embedded-postgres, áp đủ 8 migration từ đầu,
+`migrate diff` khớp schema), chạy chính code thật:
+
+- **53/53 bài thử qua**: 2 khách tranh 500g cuối -> đúng 1 được, người kia
+  được báo "còn 0g / cần 500g"; 20 khách tranh 3 hộp -> đúng 3; 30 đơn nhiều
+  loại đan chéo thứ tự -> không kẹt, không tồn âm; 5 lần gửi trùng -> 1 đơn,
+  kho trừ 1 lần; thiếu một phần -> báo đúng số còn, loại kia không bị trừ;
+  9 kiểu đầu vào sai đều bị từ chối kèm lý do; huỷ 3 lần cùng lúc -> hoàn
+  kho đúng 1 lần, thống kê về 0; không ẩn được loại có đơn mở; database từ
+  chối xoá loại có đơn. Bất biến tủ = sổ cái giữ sau mọi bước.
+- Trình duyệt (dev server nối DB thử, tài khoản admin thử): khách B ghép
+  Ổi + Xoài, khách A đặt hết Ổi ngay trước khi B bấm -> B thấy cảnh báo,
+  Ổi gạch "Vừa hết", gợi ý Dứa/Dưa hấu, form giữ nguyên; bỏ Ổi -> đặt thành
+  công. Admin xác nhận đơn B, huỷ đơn A -> Ổi về 500g, hiện lại trên trang
+  chủ. Form hiển thị ổn ở bề ngang 390px.
+- `npm run verify` xanh.

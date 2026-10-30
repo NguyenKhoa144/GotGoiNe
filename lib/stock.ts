@@ -13,7 +13,7 @@ import { formatGrams } from "@/lib/qty";
  */
 
 /** Các loại biến động kho. Hướng cộng/trừ do đây quyết định. */
-export const MOVEMENT_KINDS = ["IMPORT", "SALE", "LOSS", "ADJUST"] as const;
+export const MOVEMENT_KINDS = ["IMPORT", "SALE", "LOSS", "ADJUST", "RETURN"] as const;
 export type MovementKind = (typeof MOVEMENT_KINDS)[number];
 
 /** Nhãn tiếng Việt để hiển thị trong nhật ký. */
@@ -22,11 +22,12 @@ export const MOVEMENT_LABELS: Record<MovementKind, string> = {
   SALE: "Bán ra",
   LOSS: "Hao hụt",
   ADJUST: "Cân chỉnh",
+  RETURN: "Hoàn kho (huỷ đơn)",
 };
 
-/** IMPORT cộng vào kho, SALE và LOSS trừ đi. ADJUST tự mang dấu riêng. */
+/** IMPORT và RETURN cộng vào kho, SALE và LOSS trừ đi. ADJUST tự mang dấu riêng. */
 function signFor(kind: MovementKind, amountGrams: number): number {
-  if (kind === "IMPORT") return amountGrams;
+  if (kind === "IMPORT" || kind === "RETURN") return amountGrams;
   if (kind === "ADJUST") return amountGrams;
   return -amountGrams;
 }
@@ -43,6 +44,8 @@ export type StockChange = {
   note?: string;
   /** Ngày ghi sổ theo lịch VN. Mặc định là hôm nay. */
   date?: Date;
+  /** Đơn hàng sinh ra biến động này, nếu có. */
+  orderId?: string;
 };
 
 /**
@@ -95,7 +98,7 @@ export async function applyStockMovement(change: StockChange): Promise<string | 
   return null;
 }
 
-type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+export type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 const ARCHIVED_ERROR = (name: string) => `${name} đang ẩn. Bỏ ẩn ở tab Daily menu trước khi nhập/bán.`;
 
@@ -120,69 +123,83 @@ async function takeFromStock(tx: Tx, productId: string, delta: number): Promise<
 
 /**
  * Áp nhiều biến động cùng lúc — dùng khi chốt một đơn hàng có nhiều loại trái.
- * Kiểm tra đủ hàng cho TẤT CẢ các loại trước, rồi mới ghi: một hộp thiếu mất
- * một loại thì cả đơn không chốt được, chứ không trừ được nửa chừng rồi kẹt.
+ * Một hộp thiếu mất một loại thì cả đơn không chốt được, chứ không trừ được
+ * nửa chừng rồi kẹt.
  */
 export async function applyStockMovements(changes: StockChange[]): Promise<string | null> {
-  if (changes.length === 0) return "Chưa có loại trái cây nào để trừ kho.";
+  const invalid = validateChanges(changes);
+  if (invalid) return invalid;
 
-  const products = await prisma.product.findMany({
-    where: { id: { in: changes.map((c) => c.productId) } },
-  });
-  const byId = new Map(products.map((p) => [p.id, p]));
-
-  // Gộp trước theo loại, phòng khi cùng một loại xuất hiện hai lần trong đơn.
-  const totalDelta = new Map<string, number>();
-  for (const change of changes) {
-    const amount = Math.trunc(change.amountGrams);
-    if (!Number.isFinite(amount) || amount === 0) return "Số gram phải khác 0.";
-    if (change.kind !== "ADJUST" && amount < 0) return "Số gram phải là số dương.";
-
-    const product = byId.get(change.productId);
-    if (!product) return "Không tìm thấy loại trái cây này.";
-
-    totalDelta.set(
-      change.productId,
-      (totalDelta.get(change.productId) ?? 0) + signFor(change.kind, amount)
-    );
-  }
-
-  const date = vnToday();
-  // Loại nào thiếu thì ném lỗi để transaction huỷ hết, kể cả những loại đã
-  // trừ trước nó — đúng nguyên tắc "cả đơn hoặc không gì cả".
-  const shortId = await prisma
-    .$transaction(async (tx) => {
-      for (const [productId, delta] of totalDelta) {
-        if (!(await takeFromStock(tx, productId, delta))) throw new NotEnoughStock(productId);
-      }
-      await tx.stockMovement.createMany({
-        data: changes.map((change) => ({
-          productId: change.productId,
-          date: change.date ?? date,
-          kind: change.kind,
-          amountGrams: Math.abs(Math.trunc(change.amountGrams)),
-          deltaGrams: signFor(change.kind, Math.trunc(change.amountGrams)),
-          reason: change.reason?.trim() || null,
-          note: change.note?.trim() || null,
-        })),
-      });
-      return null;
-    })
+  const short = await prisma
+    .$transaction((tx) => applyStockMovementsInTx(tx, changes).then(() => null))
     .catch((error) => {
       if (error instanceof NotEnoughStock) return error.productId;
       throw error;
     });
 
-  if (shortId) {
-    const fresh = await prisma.product.findUnique({ where: { id: shortId } });
-    const name = fresh?.name ?? byId.get(shortId)!.name;
-    if (fresh?.archivedAt) return ARCHIVED_ERROR(name);
-    return `${name}: tủ lạnh chỉ còn ${formatGrams(fresh?.stockGrams ?? 0)}, không đủ để trừ ${formatGrams(Math.abs(totalDelta.get(shortId)!))}.`;
+  if (short) {
+    const fresh = await prisma.product.findUnique({ where: { id: short } });
+    if (!fresh) return "Không tìm thấy loại trái cây này.";
+    if (fresh.archivedAt) return ARCHIVED_ERROR(fresh.name);
+    const wanted = changes
+      .filter((c) => c.productId === short)
+      .reduce((total, c) => total + signFor(c.kind, Math.trunc(c.amountGrams)), 0);
+    return `${fresh.name}: tủ lạnh chỉ còn ${formatGrams(fresh.stockGrams)}, không đủ để trừ ${formatGrams(Math.abs(wanted))}.`;
   }
   return null;
 }
 
-class NotEnoughStock extends Error {
+/** Kiểm tra đầu vào trước khi đụng database. Trả về chuỗi lỗi, hoặc `null`. */
+export function validateChanges(changes: StockChange[]): string | null {
+  if (changes.length === 0) return "Chưa có loại trái cây nào để trừ kho.";
+  for (const change of changes) {
+    const amount = Math.trunc(change.amountGrams);
+    if (!Number.isFinite(amount) || amount === 0) return "Số gram phải khác 0.";
+    if (change.kind !== "ADJUST" && amount < 0) return "Số gram phải là số dương.";
+  }
+  return null;
+}
+
+/**
+ * Phần lõi, chạy BÊN TRONG một transaction có sẵn — để đơn hàng tạo dòng
+ * `Order` và trừ kho trong cùng một lần: hoặc cả hai, hoặc không gì cả.
+ *
+ * Loại nào thiếu thì ném `NotEnoughStock`; transaction bên ngoài tự huỷ hết,
+ * kể cả những loại đã trừ trước nó. Người gọi phải `validateChanges` trước.
+ */
+export async function applyStockMovementsInTx(tx: Tx, changes: StockChange[]): Promise<void> {
+  // Gộp trước theo loại, phòng khi cùng một loại xuất hiện hai lần trong đơn.
+  const totalDelta = new Map<string, number>();
+  for (const change of changes) {
+    const delta = signFor(change.kind, Math.trunc(change.amountGrams));
+    totalDelta.set(change.productId, (totalDelta.get(change.productId) ?? 0) + delta);
+  }
+
+  // Khoá các dòng theo thứ tự id cố định. Hai đơn cùng chứa xoài và dứa mà
+  // một đơn khoá xoài trước, đơn kia khoá dứa trước thì sẽ chờ nhau mãi
+  // (deadlock). Cùng một thứ tự thì đơn sau chỉ việc xếp hàng.
+  const ordered = [...totalDelta].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  for (const [productId, delta] of ordered) {
+    if (!(await takeFromStock(tx, productId, delta))) throw new NotEnoughStock(productId);
+  }
+
+  const date = vnToday();
+  await tx.stockMovement.createMany({
+    data: changes.map((change) => ({
+      productId: change.productId,
+      date: change.date ?? date,
+      kind: change.kind,
+      amountGrams: Math.abs(Math.trunc(change.amountGrams)),
+      deltaGrams: signFor(change.kind, Math.trunc(change.amountGrams)),
+      reason: change.reason?.trim() || null,
+      note: change.note?.trim() || null,
+      orderId: change.orderId ?? null,
+    })),
+  });
+}
+
+/** Ném ra khi một loại không đủ hàng (hoặc đã ẩn) — mang theo id loại đó. */
+export class NotEnoughStock extends Error {
   constructor(readonly productId: string) {
     super("Không đủ hàng trong tủ lạnh.");
   }

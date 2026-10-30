@@ -21,17 +21,17 @@ model User {
 }
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   category    String
   emoji       String
   name        String
   weight      String
   price       String
   badge       String?
-  featured    Boolean  @default(false)
+  featured    Boolean   @default(false)
   description String?
-  available   Boolean  @default(true)
-  sortOrder   Int      @default(0)
+  available   Boolean   @default(true)
+  sortOrder   Int       @default(0)
   // Ảnh thật thay cho emoji — thêm sẵn cột để sau này bật upload không phải
   // migrate lại; hiện chưa dùng, giao diện vẫn hiển thị emoji.
   imageUrl    String?
@@ -39,17 +39,18 @@ model Product {
   // quán còn bao nhiêu của loại này — chạy dài qua ngày, không reset theo
   // ngày như DailyMenuEntry.qtyGrams trước đây. Mọi thay đổi phải đi kèm một
   // dòng StockMovement giải thích vì sao, không bao giờ sửa trần.
-  stockGrams  Int      @default(0)
+  stockGrams  Int       @default(0)
   // Ngày admin ẩn loại này (hết mùa, ngừng bán). `null` = đang dùng. Ẩn thay
   // cho xoá để sổ cái và thống kê các tháng cũ không bao giờ tự đổi. Chỉ ẩn
   // được khi tủ đã về 0 — xem archiveProduct trong app/admin/menu/actions.ts.
   archivedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   menuEntries DailyMenuEntry[]
   losses      InventoryLoss[]
   movements   StockMovement[]
+  orderItems  OrderItem[]
 }
 
 // Một dòng = một loại trái cây có BÀY BÁN trong MỘT ngày. Chỉ trả lời "hôm
@@ -99,6 +100,7 @@ model StockMovement {
   // SALE:    bán ra cho khách (trừ kho).
   // LOSS:    mất vì lý do khác — Thảo ăn, hư/dập... (trừ kho).
   // ADJUST:  admin sửa tay cho khớp thực tế (cộng hoặc trừ).
+  // RETURN:  hoàn lại kho khi huỷ một đơn đã trừ (cộng kho, trừ khỏi "đã bán").
   kind        String
   // Luôn là số DƯƠNG. Hướng cộng/trừ do `kind` quyết định, không nhét dấu âm
   // vào đây — nếu không, mọi phép cộng thống kê đều phải nhớ quy ước riêng.
@@ -109,8 +111,60 @@ model StockMovement {
   // Với LOSS là lý do bắt buộc; với ADJUST là ghi chú tuỳ ý.
   reason      String?
   note        String?
+  // Đơn hàng sinh ra dòng này (SALE khi đặt, RETURN khi huỷ). Nhờ vậy mỗi
+  // gram bán qua web đều truy được tới đúng đơn và đúng khách.
+  orderId     String?
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: Restrict)
   createdAt   DateTime @default(now())
 
   @@index([productId, date])
   @@index([date])
+  @@index([orderId])
+}
+
+// Một đơn đặt hộp tự ghép từ trang chủ. Kho bị trừ NGAY lúc đặt (phương án A,
+// chốt 2026-10-30): hai khách cùng đặt phần cuối cùng thì database xếp hàng,
+// người tới sau bị từ chối — không bao giờ có hai đơn cùng "thành công" cho
+// một phần hàng. Huỷ đơn thì hoàn kho bằng dòng RETURN, không xoá dòng nào.
+model Order {
+  id             String   @id @default(cuid())
+  // Mã ngắn đọc được qua điện thoại, ví dụ "GG-7KQ4".
+  code           String   @unique
+  // Trình duyệt sinh một mã cho mỗi lần bấm "Đặt". Bấm hai lần hay mạng chập
+  // chờn gửi lại thì trả về đúng đơn cũ, không tạo đơn thứ hai.
+  idempotencyKey String   @unique
+  // PENDING: chờ quán gọi xác nhận · CONFIRMED: đã xác nhận · DONE: đã giao
+  // · CANCELLED: đã huỷ, kho đã hoàn.
+  status         String   @default("PENDING")
+  boxSizeId      String
+  // Trọng lượng hộp lúc đặt, chép lại vì cỡ hộp có thể đổi sau này.
+  boxGrams       Int
+  customerName   String
+  phone          String
+  address        String
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  items     OrderItem[]
+  movements StockMovement[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  // Tên lúc đặt, chép lại để đơn cũ vẫn đọc đúng dù sau này loại đó đổi tên.
+  productName String
+  // Số "phần" khách chọn trên giao diện, và số gram máy chủ chia ra từ đó.
+  parts       Int
+  grams       Int
+
+  @@index([orderId])
+  @@index([productId])
 }

@@ -47,3 +47,20 @@ export function formatShortDate(date: Date): string {
   const m = String(date.getUTCMonth() + 1).padStart(2, "0");
   return `${d}/${m}`;
 }
+
+/**
+ * Mốc 00:00 giờ VN của hôm nay, dưới dạng thời điểm THẬT (17:00 UTC hôm
+ * trước). Khác `vnToday()`: dùng để so với cột thời điểm như `createdAt`,
+ * không phải cột ngày `@db.Date`.
+ */
+export function vnStartOfTodayInstant(): Date {
+  return new Date(vnToday().getTime() - VN_OFFSET_MS);
+}
+
+/** Ví dụ: "14:05 · 30/10" — giờ VN của một thời điểm thật (createdAt...). */
+export function formatVnTime(instant: Date): string {
+  const vn = new Date(instant.getTime() + VN_OFFSET_MS);
+  const hh = String(vn.getUTCHours()).padStart(2, "0");
+  const mm = String(vn.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm} · ${formatShortDate(vn)}`;
+}

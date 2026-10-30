@@ -28,6 +28,7 @@ const KIND_STYLES: Record<MovementKind, string> = {
   SALE: "bg-blue-50 text-blue-700",
   LOSS: "bg-orange-50 text-orange-700",
   ADJUST: "bg-neutral-100 text-neutral-600",
+  RETURN: "bg-violet-50 text-violet-700",
 };
 
 /**
